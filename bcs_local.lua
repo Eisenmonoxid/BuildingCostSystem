@@ -43,7 +43,7 @@ OwnBuildingCostSystem.OverlayWidget = "/EndScreen"
 OwnBuildingCostSystem.MissingResourcesMessage = "Benötigte Rohstoffe sind nicht vorhanden!"
 OwnBuildingCostSystem.OverlayIsCurrentlyShown = false
 OwnBuildingCostSystem.EnsuredQuestSystemBehaviorCompatibility = false
-OwnBuildingCostSystem.CurrentBCSVersion = "2.8 - 01.12.2022 23:25"
+OwnBuildingCostSystem.CurrentBCSVersion = "2.9 - 07.01.2023 17:56"
 
 ----------------------------------------------------------------------------------------------------------------------
 --These functions are exported to Userspace---------------------------------------------------------------------------
@@ -400,6 +400,7 @@ OwnBuildingCostSystem.OverwriteBuildClicked = function()
 		OwnBuildingCostSystem.BuildClicked = GUI_Construction.BuildClicked;
 	end	
 	GUI_Construction.BuildClicked = function(_BuildingType)
+		GUI.CancelState()
 		OwnBuildingCostSystem.HasCurrentBuildingOwnBuildingCosts(_BuildingType)
 		g_LastPlacedParam = _BuildingType
 		OwnBuildingCostSystem.IsInWallOrPalisadeContinueState = false
@@ -413,6 +414,7 @@ OwnBuildingCostSystem.OverwriteBuildClicked = function()
 	    if _BuildingType == nil then
 			_BuildingType = GetUpgradeCategoryForClimatezone("WallSegment")
 		end
+		GUI.CancelState()
 		OwnBuildingCostSystem.ResetWallTurretPositions()
 		g_LastPlacedParam = _BuildingType
 		OwnBuildingCostSystem.IsInWallOrPalisadeContinueState = false
@@ -426,6 +428,7 @@ OwnBuildingCostSystem.OverwriteBuildClicked = function()
 	    if _BuildingType == nil then
 			_BuildingType = GetUpgradeCategoryForClimatezone("WallGate")
 		end
+		GUI.CancelState()
 		OwnBuildingCostSystem.HasCurrentBuildingOwnBuildingCosts(_BuildingType)
 		g_LastPlacedParam = _BuildingType
 		OwnBuildingCostSystem.BuildWallGateClicked(_BuildingType)
@@ -439,6 +442,7 @@ OwnBuildingCostSystem.OverwriteBuildClicked = function()
 	    if _IsTrail == nil then
 			_IsTrail = false
 		end
+		GUI.CancelState()
 		OwnBuildingCostSystem.SetAwaitingVariable(false)
 		g_LastPlacedParam = _IsTrail
 		OwnBuildingCostSystem.BuildStreetClicked(_IsTrail)
@@ -448,6 +452,7 @@ OwnBuildingCostSystem.OverwriteBuildClicked = function()
 		OwnBuildingCostSystem.ContinueWallClicked = GUI_BuildingButtons.ContinueWallClicked;
 	end	
 	GUI_BuildingButtons.ContinueWallClicked = function()
+		GUI.CancelState()
 		OwnBuildingCostSystem.ResetWallTurretPositions()
 		
 		local TurretID = GUI.GetSelectedEntity()
@@ -457,7 +462,7 @@ OwnBuildingCostSystem.OverwriteBuildClicked = function()
 		if TurretType ~= Entities.B_PalisadeTurret
 			and TurretType ~= Entities.B_PalisadeGate_Turret_L
 			and TurretType ~= Entities.B_PalisadeGate_Turret_R then
-				UpgradeCategory = GetUpgradeCategoryForClimatezone( "WallSegment" )
+				UpgradeCategory = GetUpgradeCategoryForClimatezone("WallSegment")
 		end
 		g_LastPlacedParam = UpgradeCategory
 		OwnBuildingCostSystem.IsInWallOrPalisadeContinueState = true
@@ -466,23 +471,11 @@ OwnBuildingCostSystem.OverwriteBuildClicked = function()
 	end
 end
 OwnBuildingCostSystem.OverwriteBuildAbort = function()
-	if OwnBuildingCostSystem.ConstructBuildAbort == nil then
-		OwnBuildingCostSystem.ConstructBuildAbort = GameCallback_GUI_ConstructBuildAbort;
-	end	
-	GameCallback_GUI_ConstructBuildAbort = function()
-		OwnBuildingCostSystem.SetAwaitingVariable(false)
-		OwnBuildingCostSystem.ResetWallTurretPositions()
-		OwnBuildingCostSystem.ResetTrailAndRoadCosts()
-		GUI.SendScriptCommand([[OwnBuildingCostSystem.AreBuildingCostsAvailable = nil]])
-		OwnBuildingCostSystem.ShowOverlayWidget(false)
-		OwnBuildingCostSystem.IsInWallOrPalisadeContinueState = false
-		OwnBuildingCostSystem.ConstructBuildAbort()
-	end
 	if OwnBuildingCostSystem.ConstructWallAbort == nil then
 		OwnBuildingCostSystem.ConstructWallAbort = GameCallBack_GUI_ConstructWallAbort;
 	end	
 	GameCallBack_GUI_ConstructWallAbort = function()
-		OwnBuildingCostSystem.SetAwaitingVariable(false)
+		--OwnBuildingCostSystem.SetAwaitingVariable(false) -- When clicking on a BuildingButton a second time, this will invalidate the new costs!
 		OwnBuildingCostSystem.ResetWallTurretPositions()
 		OwnBuildingCostSystem.IsInWallOrPalisadeContinueState = false
 		OwnBuildingCostSystem.ConstructWallAbort()
@@ -725,10 +718,10 @@ OwnBuildingCostSystem.InitializeOwnBuildingCostSystem = function()
 			and (_StateNameID ~= GUI.GetStateNameByID("PlaceWall"))
 			and (_StateNameID ~= GUI.GetStateNameByID("PlaceRoad"))) then
 				OwnBuildingCostSystem.SetAwaitingVariable(false)
+				OwnBuildingCostSystem.ShowOverlayWidget(false)
 				OwnBuildingCostSystem.ResetWallTurretPositions()
 				OwnBuildingCostSystem.ResetTrailAndRoadCosts()
 				GUI.SendScriptCommand([[OwnBuildingCostSystem.AreBuildingCostsAvailable = nil]])
-				OwnBuildingCostSystem.ShowOverlayWidget(false)
 		end
 	end
 
@@ -823,7 +816,6 @@ OwnBuildingCostSystem.OverwriteEndScreenCallback = function()
 		GUI.CancelState()
 		OwnBuildingCostSystem.CurrentExpectedBuildingType = nil
 		GUI_Construction.PlacementFailed(nil)
-		GameCallback_GUI_ConstructBuildAbort()
 		Message(OwnBuildingCostSystem.MissingResourcesMessage)
 		Framework.WriteToLog("BCS: Resources Ran Out!")
 	end
