@@ -1,11 +1,10 @@
 ----------------------------------------------------------------------------------------------------------------------
------------------------------**OwnBuildingCostSystem Created By Eisenmonoxid**----------------------------------------
-----------------------------------------------------------------------------------------------------------------------
+-----------------------------**BuildingCostSystem (BCS) Created By Eisenmonoxid**-------------------------------------
 ----------------------------------------------------------------------------------------------------------------------
 OwnBuildingCostSystem = {}
 
-OwnBuildingCostSystem.BuildingCosts = {}
-OwnBuildingCostSystem.BuildingIDTable = {}
+OwnBuildingCostSystem.BuildingCosts = {} -- Contains all new costs
+OwnBuildingCostSystem.BuildingIDTable = {} -- Contains Building IDs and the corresponding costs
 
 OwnBuildingCostSystem.RoadMultiplier = {}
 OwnBuildingCostSystem.RoadMultiplier.First = 1
@@ -25,11 +24,11 @@ OwnBuildingCostSystem.WallCosts = nil
 
 OwnBuildingCostSystem.IsCurrentBuildingInCostTable = false
 OwnBuildingCostSystem.CurrentExpectedBuildingType = nil
-OwnBuildingCostSystem.CurrentKnockDownFactor = 0.5
+OwnBuildingCostSystem.CurrentKnockDownFactor = 0.5 -- Half the new good cost is refunded at knock down
 OwnBuildingCostSystem.CurrentOriginalGoodKnockDownFactor = 0.2
 OwnBuildingCostSystem.IsInWallOrPalisadeContinueState = false
 
-StartTurretX = 1
+StartTurretX = 1 -- Variables from the Original Lua Game Script
 StartTurretY = 1
 
 EndTurretX = 1
@@ -43,7 +42,7 @@ OwnBuildingCostSystem.OverlayWidget = "/EndScreen"
 OwnBuildingCostSystem.MissingResourcesMessage = "Benötigte Rohstoffe sind nicht vorhanden!"
 OwnBuildingCostSystem.OverlayIsCurrentlyShown = false
 OwnBuildingCostSystem.EnsuredQuestSystemBehaviorCompatibility = false
-OwnBuildingCostSystem.CurrentBCSVersion = "2.9 - 07.01.2023 17:56"
+OwnBuildingCostSystem.CurrentBCSVersion = "3.0 - 11.01.2023 22:26"
 
 ----------------------------------------------------------------------------------------------------------------------
 --These functions are exported to Userspace---------------------------------------------------------------------------
@@ -475,7 +474,6 @@ OwnBuildingCostSystem.OverwriteBuildAbort = function()
 		OwnBuildingCostSystem.ConstructWallAbort = GameCallBack_GUI_ConstructWallAbort;
 	end	
 	GameCallBack_GUI_ConstructWallAbort = function()
-		--OwnBuildingCostSystem.SetAwaitingVariable(false) -- When clicking on a BuildingButton a second time, this will invalidate the new costs!
 		OwnBuildingCostSystem.ResetWallTurretPositions()
 		OwnBuildingCostSystem.IsInWallOrPalisadeContinueState = false
 		OwnBuildingCostSystem.ConstructWallAbort()
@@ -815,7 +813,6 @@ OwnBuildingCostSystem.OverwriteEndScreenCallback = function()
 	EndScreen_ExitGame = function()
 		GUI.CancelState()
 		OwnBuildingCostSystem.CurrentExpectedBuildingType = nil
-		GUI_Construction.PlacementFailed(nil)
 		Message(OwnBuildingCostSystem.MissingResourcesMessage)
 		Framework.WriteToLog("BCS: Resources Ran Out!")
 	end
@@ -839,10 +836,12 @@ OwnBuildingCostSystem.ShowOverlayWidget = function(_flag)
 			GUI.SendScriptCommand([[OwnBuildingCostSystem.AreBuildingCostsAvailable = false]])
 		end
 	else
-		XGUIEng.ShowAllSubWidgets(OwnBuildingCostSystem.OverlayWidget, 0)
-		XGUIEng.ShowWidget(OwnBuildingCostSystem.OverlayWidget, 0)
-		OwnBuildingCostSystem.OverlayIsCurrentlyShown = false
-		GUI.SendScriptCommand([[OwnBuildingCostSystem.AreBuildingCostsAvailable = true]])
+		if OwnBuildingCostSystem.OverlayIsCurrentlyShown == true then
+			XGUIEng.ShowAllSubWidgets(OwnBuildingCostSystem.OverlayWidget, 0)
+			XGUIEng.ShowWidget(OwnBuildingCostSystem.OverlayWidget, 0)
+			OwnBuildingCostSystem.OverlayIsCurrentlyShown = false
+			GUI.SendScriptCommand([[OwnBuildingCostSystem.AreBuildingCostsAvailable = true]])
+		end
 	end
 end
 
