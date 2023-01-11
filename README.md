@@ -9,7 +9,7 @@ After you've loaded the file you call `OwnBuildingCostSystem.InitializeOwnBuildi
 
 ### Features
 
-- Most buildings in the game can have new costs (see the exact possibilities and limitions in the `bcs_local.lua` file).
+- Most buildings in the game can have new costs (see the exact possibilities and limitions in the `bcs_costs.lua` file).
 - Festivals can have own costs too
 - The hunter can now hunt farm animals as well
 - A few minor bug fixes in the game
