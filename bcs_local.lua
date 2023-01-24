@@ -228,16 +228,14 @@ OwnBuildingCostSystem.RemoveCostsFromOutStockCityGoods = function(_goodType, _go
 
 	local CurrentOutStock = 0
     for i = 1, #Buildings, 1 do
-        if Logic.IsBuilding(Buildings[i]) == 1 and Logic.IsConstructionComplete(Buildings[i]) == 1 then
-			CurrentOutStock = Logic.GetAmountOnOutStockByGoodType(Buildings[i], _goodType)
-			if CurrentOutStock <= AmountToRemove then
-				GUI.RemoveGoodFromStock(Buildings[i], _goodType, CurrentOutStock)
-				AmountToRemove = AmountToRemove - CurrentOutStock
-			else
-				GUI.RemoveGoodFromStock(Buildings[i], _goodType, AmountToRemove)
-				break;
-			end
-        end
+		CurrentOutStock = Logic.GetAmountOnOutStockByGoodType(Buildings[i], _goodType)
+		if CurrentOutStock <= AmountToRemove then
+			GUI.RemoveGoodFromStock(Buildings[i], _goodType, CurrentOutStock)
+			AmountToRemove = AmountToRemove - CurrentOutStock
+		else
+			GUI.RemoveGoodFromStock(Buildings[i], _goodType, AmountToRemove)
+			break;
+		end
     end
 end
 
@@ -285,15 +283,19 @@ OwnBuildingCostSystem.RefundKnockDown = function(_entityID)
 	local IDSecondGood = OwnBuildingCostSystem.GetEntityIDToAddToOutStock(CostTable[4])
 
 	
-	if IDFirstGood == false and OwnBuildingCostSystem.RefundCityGoods == true then -- CityGood
-		OwnBuildingCostSystem.RefundKnockDownForCityGoods(CostTable[2], (Round(CostTable[3] * OwnBuildingCostSystem.CurrentOriginalGoodKnockDownFactor)))
+	if IDFirstGood == false then -- CityGood
+		if OwnBuildingCostSystem.RefundCityGoods == true then
+			OwnBuildingCostSystem.RefundKnockDownForCityGoods(CostTable[2], (Round(CostTable[3] * OwnBuildingCostSystem.CurrentOriginalGoodKnockDownFactor)))
+		end
 	else
 		GUI.SendScriptCommand([[
 			Logic.AddGoodToStock(]]..IDFirstGood..[[, ]]..CostTable[2]..[[, ]]..(Round(CostTable[3] * OwnBuildingCostSystem.CurrentOriginalGoodKnockDownFactor))..[[)	
 		]])
 	end
-	if IDSecondGood == false and OwnBuildingCostSystem.RefundCityGoods == true then -- CityGood
-		OwnBuildingCostSystem.RefundKnockDownForCityGoods(CostTable[4], (Round(CostTable[5] * OwnBuildingCostSystem.CurrentKnockDownFactor)))
+	if IDSecondGood == false then -- CityGood
+		if OwnBuildingCostSystem.RefundCityGoods == true then
+			OwnBuildingCostSystem.RefundKnockDownForCityGoods(CostTable[4], (Round(CostTable[5] * OwnBuildingCostSystem.CurrentKnockDownFactor)))
+		end
 	else
 		GUI.SendScriptCommand([[
 			Logic.AddGoodToStock(]]..IDSecondGood..[[, ]]..CostTable[4]..[[, ]]..(Round(CostTable[5] * OwnBuildingCostSystem.CurrentKnockDownFactor))..[[)	
@@ -315,24 +317,22 @@ OwnBuildingCostSystem.RefundKnockDownForCityGoods = function(_goodType, _goodAmo
 
 	local CurrentOutStock, CurrentMaxOutStock = 0, 0
     for i = 1, #Buildings, 1 do
-        if Logic.IsBuilding(Buildings[i]) == 1 and Logic.IsConstructionComplete(Buildings[i]) == 1 then
-			CurrentOutStock = Logic.GetAmountOnOutStockByGoodType(Buildings[i], _goodType)
-			CurrentMaxOutStock = Logic.GetMaxAmountOnStock(Buildings[i])
-			if CurrentOutStock < CurrentMaxOutStock then
-				local FreeStock = CurrentMaxOutStock - CurrentOutStock
-				if FreeStock > AmountToRemove then
-					GUI.SendScriptCommand([[
-						Logic.AddGoodToStock(]]..Buildings[i]..[[, ]].._goodType..[[, ]]..AmountToRemove..[[)	
-					]])
-					break;
-				else
-					AmountToRemove = AmountToRemove - FreeStock
-					GUI.SendScriptCommand([[
-						Logic.AddGoodToStock(]]..Buildings[i]..[[, ]].._goodType..[[, ]]..FreeStock..[[)	
-					]])
-				end
+		CurrentOutStock = Logic.GetAmountOnOutStockByGoodType(Buildings[i], _goodType)
+		CurrentMaxOutStock = Logic.GetMaxAmountOnStock(Buildings[i])
+		if CurrentOutStock < CurrentMaxOutStock then
+			local FreeStock = CurrentMaxOutStock - CurrentOutStock
+			if FreeStock > AmountToRemove then
+				GUI.SendScriptCommand([[
+					Logic.AddGoodToStock(]]..Buildings[i]..[[, ]].._goodType..[[, ]]..AmountToRemove..[[)	
+				]])
+				break;
+			else
+				AmountToRemove = AmountToRemove - FreeStock
+				GUI.SendScriptCommand([[
+					Logic.AddGoodToStock(]]..Buildings[i]..[[, ]].._goodType..[[, ]]..FreeStock..[[)	
+				]])
 			end
-        end
+		end
     end
 end
 
