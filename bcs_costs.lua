@@ -15,9 +15,9 @@ function SetMyBuildingCosts()
 	OwnBuildingCostSystem.EditBuildingCosts(UpgradeCategories.CattleFarm, 15, Goods.G_Salt, 12)
 	OwnBuildingCostSystem.EditBuildingCosts(UpgradeCategories.GrainFarm, 15, Goods.G_Olibanum, 12)
 	OwnBuildingCostSystem.EditBuildingCosts(UpgradeCategories.SheepFarm, 15, Goods.G_Dye, 12)
-	OwnBuildingCostSystem.EditBuildingCosts(UpgradeCategories.Beekeeper, 15, Goods.G_Herb, 15)
+	OwnBuildingCostSystem.EditBuildingCosts(UpgradeCategories.Beekeeper, 15, Goods.G_Medicine, 15)
 	--Gatherer - Normal
-	OwnBuildingCostSystem.EditBuildingCosts(UpgradeCategories.Woodcutter, 12, Goods.G_RawFish, 10)
+	OwnBuildingCostSystem.EditBuildingCosts(UpgradeCategories.Woodcutter, 12, Goods.G_Broom, 10)
 	OwnBuildingCostSystem.EditBuildingCosts(UpgradeCategories.HuntersHut, 12, Goods.G_Grain, 12)
 	OwnBuildingCostSystem.EditBuildingCosts(UpgradeCategories.FishingHut, 12, Goods.G_Gold, 85)
 	OwnBuildingCostSystem.EditBuildingCosts(UpgradeCategories.StoneQuarry, 15, Goods.G_Gold, 95)
@@ -45,7 +45,7 @@ function SetMyBuildingCosts()
 	OwnBuildingCostSystem.EditBuildingCosts(UpgradeCategories.Carpenter, 15, Goods.G_MusicalInstrument, 12)
 	OwnBuildingCostSystem.EditBuildingCosts(UpgradeCategories.BannerMaker, 15, Goods.G_MusicalInstrument, 12)
 	--Military
-	OwnBuildingCostSystem.EditBuildingCosts(UpgradeCategories.Barracks, 25, Goods.G_Stone, 20)
+	OwnBuildingCostSystem.EditBuildingCosts(UpgradeCategories.Barracks, 25, Goods.G_Bread, 20)
 	OwnBuildingCostSystem.EditBuildingCosts(UpgradeCategories.BarracksBow, 25, Goods.G_Stone, 20)
 	OwnBuildingCostSystem.EditBuildingCosts(UpgradeCategories.SwordSmith, 12, Goods.G_Iron, 18)
 	OwnBuildingCostSystem.EditBuildingCosts(UpgradeCategories.BowMaker, 12, Goods.G_Iron, 18)
@@ -53,13 +53,13 @@ function SetMyBuildingCosts()
 	--Other
 	OwnBuildingCostSystem.EditBuildingCosts(UpgradeCategories.Cistern, 12, Goods.G_Olibanum, 15)
 	--Fields
-	OwnBuildingCostSystem.EditBuildingCosts(UpgradeCategories.GrainField_SouthEurope, 8, Goods.G_Dye, 6) --Replace NorthEurope with your climate zone! / Ersetze NorthEurope mit deiner derzeitigen Klimazone!
+	OwnBuildingCostSystem.EditBuildingCosts(UpgradeCategories.GrainField_SouthEurope, 8, Goods.G_Dye, 6) --Replace SouthEurope with your climate zone! / Ersetze SouthEurope mit deiner derzeitigen Klimazone!
 	OwnBuildingCostSystem.EditBuildingCosts(UpgradeCategories.CattlePasture, 8, Goods.G_Olibanum, 6)
-	OwnBuildingCostSystem.EditBuildingCosts(UpgradeCategories.SheepPasture, 8, Goods.G_Salt, 6)
+	OwnBuildingCostSystem.EditBuildingCosts(UpgradeCategories.SheepPasture, 8, Goods.G_Medicine, 6)
 	OwnBuildingCostSystem.EditBuildingCosts(UpgradeCategories.BeeHive, 8, Goods.G_Herb, 8)
 	--Palisade/Wall - Gates
 	OwnBuildingCostSystem.EditBuildingCosts(UpgradeCategories.PalisadeGate, 10, Goods.G_Dye, 6)
-	OwnBuildingCostSystem.EditBuildingCosts(UpgradeCategories.WallGate_SouthEurope, 16, Goods.G_Olibanum, 6) --Replace Asia with your climate zone! / Ersetze Asia mit deiner derzeitigen Klimazone!
+	OwnBuildingCostSystem.EditBuildingCosts(UpgradeCategories.WallGate_SouthEurope, 16, Goods.G_Olibanum, 6) --Replace SouthEurope with your climate zone! / Ersetze SouthEurope mit deiner derzeitigen Klimazone!
 	--Buildings without fixed cost
 	OwnBuildingCostSystem.EditWallCosts(4.2, Goods.G_Grain, 3) --Wallcosts/Mauerkosten
 	OwnBuildingCostSystem.EditPalisadeCosts(3.5, Goods.G_Gems, 5) --Palisadecosts/Palisadenkosten
@@ -78,8 +78,14 @@ function SetMyBuildingCosts()
 	
 	Goods.G_Gold,
 	Goods.G_RawFish, Goods.G_Grain, Goods.G_Wood, Goods.G_Iron, Goods.G_Carcass, Goods.G_Stone, Goods.G_Herb, Goods.G_Honeycomb, Goods.G_Wool, Goods.G_Milk,
-	Goods.G_Gems, Goods.G_Dye, Goods.G_Salt, Goods.G_Olibanum, Goods.G_MusicalInstrument
+	Goods.G_Gems, Goods.G_Dye, Goods.G_Salt, Goods.G_Olibanum, Goods.G_MusicalInstrument,
 	
+	Including ALL City Goods from City Buildings, e.g. ... (THESE DO NOT WORK WITH VARIABLE COST BUILDINGS like Wall, Palisade, Street, Road)
+	Inkludierend ALLER Verbrauchsgüter von Stadtgebäuden, zum Beispiel ... (DIESE FUNKTIONIEREN NICHT MIT VARIABLEN GEBÄUDEN wie Mauer, Palisade, Straße, Weg)
+	
+	Goods.G_Beer, Goods.G_Bread, Goods.G_Broom, Goods.G_Cheese, Goods.G_Clothes, Goods.G_Leather, Goods.G_Medicine,
+	Goods.G_PoorBow, Goods.G_PoorSword, Goods.G_Sausage, Goods.G_SmokedFish, Goods.G_Soap, etc ...
+
 	]]--
 	
 	--This function here sets the amount of goods that are returned when the building is knocked down!
@@ -90,6 +96,11 @@ function SetMyBuildingCosts()
 	--Standardmäßig sind 20% Rückerstattung der originalen Ware und die Hälfte der neuen Ware eingestellt.
 	--Wenn man z.B 80% der neuen Ware rückerstatten lassen will, ersetzt man 0.5 durch 0.8
 	OwnBuildingCostSystem.SetKnockDownFactor(0.2, 0.5)
+	
+	--This function here sets whether city goods (Goods.G_Sausage, etc.) will be refunded at knock down.
+	
+	--Diese Funktion hier entscheidet, ob Verbrauchsgüter (Goods.G_Sausage, etc.) beim Abriss zurückerstattet werden.
+	OwnBuildingCostSystem.SetRefundCityGoods(true)
 end
 
 function ResetMyBuildingCosts()
