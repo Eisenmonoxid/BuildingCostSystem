@@ -815,17 +815,16 @@ OwnBuildingCostSystem.InitializeOwnBuildingCostSystem = function()
 		OwnBuildingCostSystem.AreCostsAffordable = AreCostsAffordable;
 	end	
 	AreCostsAffordable = function(_Costs, _GoodsInSettlementBoolean)
-		local CanBuyBoolean, CanNotBuyStringTableText = OwnBuildingCostSystem.AreCostsAffordable(_Costs, _GoodsInSettlementBoolean)
 		if (OwnBuildingCostSystem.GetAwaitingVariable() == true) then
 			if (OwnBuildingCostSystem.AreResourcesAvailable(g_LastPlacedParam) == false) then
-				CanBuyBoolean = false
 				OwnBuildingCostSystem.CurrentExpectedBuildingType = nil
 				OwnBuildingCostSystem.SetAwaitingVariable(false)
+				return false, XGUIEng.GetStringTableText("Feedback_TextLines/TextLine_NotEnough_Resources")
 			else
-				CanBuyBoolean = true
+				return true
 			end
 		end
-		return CanBuyBoolean, CanNotBuyStringTableText
+		return OwnBuildingCostSystem.AreCostsAffordable(_Costs, _GoodsInSettlementBoolean)
 	end
 	
 	if OwnBuildingCostSystem.SetCosts == nil then
