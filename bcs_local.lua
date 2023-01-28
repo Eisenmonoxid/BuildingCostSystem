@@ -892,7 +892,7 @@ OwnBuildingCostSystem.InitializeOwnBuildingCostSystem = function()
 	function KeyBindings_BuildLastPlaced()
 		if g_LastPlacedFunction ~= nil and g_LastPlacedParam == true then -- Trail
 			KeyBindings_BuildTrail()
-		else g_LastPlacedFunction ~= nil and g_LastPlacedParam == false then -- Road
+		elseif g_LastPlacedFunction ~= nil and g_LastPlacedParam == false then -- Road
 			KeyBindings_BuildStreet()
 		elseif g_LastPlacedFunction ~= nil then
 			g_LastPlacedFunction(g_LastPlacedParam)
