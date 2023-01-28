@@ -43,7 +43,7 @@ OwnBuildingCostSystem.HunterButtonID = nil
 OwnBuildingCostSystem.OverlayWidget = "/EndScreen"
 OwnBuildingCostSystem.OverlayIsCurrentlyShown = false
 OwnBuildingCostSystem.EnsuredQuestSystemBehaviorCompatibility = false
-OwnBuildingCostSystem.CurrentBCSVersion = "3.3 - 24.01.2023 23:22"
+OwnBuildingCostSystem.CurrentBCSVersion = "3.3 - 28.01.2023 20:19"
 
 ----------------------------------------------------------------------------------------------------------------------
 --These functions are exported to Userspace---------------------------------------------------------------------------
@@ -886,6 +886,17 @@ OwnBuildingCostSystem.InitializeOwnBuildingCostSystem = function()
 			_Costs = {OwnBuildingCostSystem.WallCosts[1], -1, OwnBuildingCostSystem.WallCosts[3], -1}					
 		end
 		OwnBuildingCostSystem.SetCosts(_TooltipCostsContainer, _Costs, _GoodsInSettlementBoolean)
+	end
+	
+	-- Trails don't work when called directly 
+	function KeyBindings_BuildLastPlaced()
+		if g_LastPlacedFunction ~= nil and g_LastPlacedParam == true then -- Trail
+			KeyBindings_BuildTrail()
+		else g_LastPlacedFunction ~= nil and g_LastPlacedParam == false then -- Road
+			KeyBindings_BuildStreet()
+		elseif g_LastPlacedFunction ~= nil then
+			g_LastPlacedFunction(g_LastPlacedParam)
+		end
 	end
 		
 	GUI.SendScriptCommand([[
