@@ -43,7 +43,7 @@ OwnBuildingCostSystem.HunterButtonID = nil
 OwnBuildingCostSystem.OverlayWidget = "/EndScreen"
 OwnBuildingCostSystem.OverlayIsCurrentlyShown = false
 OwnBuildingCostSystem.EnsuredQuestSystemBehaviorCompatibility = false
-OwnBuildingCostSystem.CurrentBCSVersion = "3.2 - 24.01.2023 23:22"
+OwnBuildingCostSystem.CurrentBCSVersion = "3.3 - 24.01.2023 23:22"
 
 ----------------------------------------------------------------------------------------------------------------------
 --These functions are exported to Userspace---------------------------------------------------------------------------
@@ -125,11 +125,6 @@ end
 
 OwnBuildingCostSystem.ActivateHuntableAnimals = function(_flag)
 	OwnBuildingCostSystem.HuntableAnimals = _flag
-end
-
-OwnBuildingCostSystem.SetUseMarketplaceGoodsAsCosts = function(_flag)
-	--OwnBuildingCostSystem.MarketplaceGoodsCount = _flag --> Not yet implemented
-	return; 
 end
 
 OwnBuildingCostSystem.SetRefundCityGoods = function(_flag)
@@ -239,6 +234,50 @@ OwnBuildingCostSystem.RemoveCostsFromOutStockCityGoods = function(_goodType, _go
     end
 end
 
+OwnBuildingCostSystem.RemoveVariableCostsFromOutStock = function(_type)
+	-- 1 = Palisade, 2 = Wall, 3 = Trail, 4 = Road
+	local CostTable, OriginalCosts, CurrentID
+	local Costs = {0,0,0,0} -- Just to be sure
+	
+	if _type == 1 then -- Palisade
+		CostTable = OwnBuildingCostSystem.PalisadeCosts
+		Costs = {Logic.GetCostForWall(Entities.B_PalisadeSegment, Entities.B_PalisadeTurret, StartTurretX, StartTurretY, EndTurretX, EndTurretY)}
+		OriginalCosts = {OwnBuildingCostSystem.GetCostForWall(Entities.B_PalisadeSegment, Entities.B_PalisadeTurret, StartTurretX, StartTurretY, EndTurretX, EndTurretY)}[2]
+		--OriginalCosts = OriginalCosts[2]
+	elseif _type == 2 then -- Wall
+		CostTable = OwnBuildingCostSystem.WallCosts
+		Costs = {Logic.GetCostForWall(Entities.B_WallSegment_ME, Entities.B_WallTurret_ME, StartTurretX, StartTurretY, EndTurretX, EndTurretY)}
+		OriginalCosts = {OwnBuildingCostSystem.GetCostForWall(Entities.B_WallSegment_ME, Entities.B_WallTurret_ME, StartTurretX, StartTurretY, EndTurretX, EndTurretY)}[2]
+		--OriginalCosts = OriginalCosts[2]
+	elseif _type == 3 then -- Trail
+		CostTable = OwnBuildingCostSystem.TrailCosts
+		Costs[2] = OwnBuildingCostSystem.StreetMultiplier.First
+		Costs[4] = OwnBuildingCostSystem.StreetMultiplier.Second
+		OriginalCosts = 0 -- Trail has no costs in base game
+	elseif _type == 4 then -- Road
+		CostTable = OwnBuildingCostSystem.RoadCosts
+		Costs[2] = OwnBuildingCostSystem.RoadMultiplier.First
+		Costs[4] = OwnBuildingCostSystem.RoadMultiplier.Second
+		OriginalCosts = OwnBuildingCostSystem.RoadMultiplier.CurrentActualCost
+	else
+		return; -- No valid type, so remove nothing
+	end
+	
+	CurrentID = OwnBuildingCostSystem.GetEntityIDToAddToOutStock(CostTable[1])
+	if CurrentID == false then
+		OwnBuildingCostSystem.RemoveCostsFromOutStockCityGoods(CostTable[1], Costs[2] - OriginalCosts)
+	else
+		GUI.RemoveGoodFromStock(CurrentID, CostTable[1], Costs[2] - OriginalCosts)
+	end
+	
+	CurrentID = OwnBuildingCostSystem.GetEntityIDToAddToOutStock(CostTable[3])
+	if CurrentID == false then
+		OwnBuildingCostSystem.RemoveCostsFromOutStockCityGoods(CostTable[3], Costs[4])
+	else
+		GUI.RemoveGoodFromStock(CurrentID, CostTable[3], Costs[4])
+	end
+end
+
 OwnBuildingCostSystem.AreResourcesAvailable = function(_upgradeCategory, _FGoodAmount, _SGoodAmount)
 	local PlayerID = GUI.GetPlayerID()
 	local AmountOfTypes, FirstBuildingType, Costs
@@ -317,23 +356,27 @@ OwnBuildingCostSystem.RefundKnockDownForCityGoods = function(_goodType, _goodAmo
 
 	local CurrentOutStock, CurrentMaxOutStock = 0, 0
     for i = 1, #Buildings, 1 do
-		CurrentOutStock = Logic.GetAmountOnOutStockByGoodType(Buildings[i], _goodType)
-		CurrentMaxOutStock = Logic.GetMaxAmountOnStock(Buildings[i])
-		if CurrentOutStock < CurrentMaxOutStock then
-			local FreeStock = CurrentMaxOutStock - CurrentOutStock
-			if FreeStock > AmountToRemove then
-				GUI.SendScriptCommand([[
-					Logic.AddGoodToStock(]]..Buildings[i]..[[, ]].._goodType..[[, ]]..AmountToRemove..[[)	
-				]])
-				break;
-			else
-				AmountToRemove = AmountToRemove - FreeStock
-				GUI.SendScriptCommand([[
-					Logic.AddGoodToStock(]]..Buildings[i]..[[, ]].._goodType..[[, ]]..FreeStock..[[)	
-				]])
+		if Logic.IsBuilding(Buildings[i]) == 1 and Logic.IsConstructionComplete(Buildings[i]) == 1 then
+			CurrentOutStock = Logic.GetAmountOnOutStockByGoodType(Buildings[i], _goodType)
+			CurrentMaxOutStock = Logic.GetMaxAmountOnStock(Buildings[i])
+			if CurrentOutStock < CurrentMaxOutStock then
+				local FreeStock = CurrentMaxOutStock - CurrentOutStock
+				if FreeStock > AmountToRemove then
+					GUI.SendScriptCommand([[
+						Logic.AddGoodToStock(]]..Buildings[i]..[[, ]].._goodType..[[, ]]..AmountToRemove..[[)	
+					]])
+					break;
+				else
+					AmountToRemove = AmountToRemove - FreeStock
+					GUI.SendScriptCommand([[
+						Logic.AddGoodToStock(]]..Buildings[i]..[[, ]].._goodType..[[, ]]..FreeStock..[[)	
+					]])
+				end
 			end
 		end
     end
+	
+	Framework.WriteToLog("BCS: Refunded City Goods with type ".._goodType.." and amount ".._goodAmount..". Amount Lost: "..AmountToRemove)
 end
 
 OwnBuildingCostSystem.GetEntityIDToAddToOutStock = function(_goodType)
@@ -443,15 +486,14 @@ OwnBuildingCostSystem.OverwriteAfterPlacement = function()
     GameCallback_GUI_AfterRoadPlacement = function()
 		if g_LastPlacedParam == false then --Road
 			if (OwnBuildingCostSystem.RoadCosts ~= nil) then
-				GUI.RemoveGoodFromStock(OwnBuildingCostSystem.GetEntityIDToAddToOutStock(OwnBuildingCostSystem.RoadCosts[1]), OwnBuildingCostSystem.RoadCosts[1], OwnBuildingCostSystem.RoadMultiplier.First - OwnBuildingCostSystem.RoadMultiplier.CurrentActualCost)
-				GUI.RemoveGoodFromStock(OwnBuildingCostSystem.GetEntityIDToAddToOutStock(OwnBuildingCostSystem.RoadCosts[3]), OwnBuildingCostSystem.RoadCosts[3], OwnBuildingCostSystem.RoadMultiplier.Second)	
+				OwnBuildingCostSystem.RemoveVariableCostsFromOutStock(4)
 			end
 		else --Trail
 			if (OwnBuildingCostSystem.TrailCosts ~= nil) then
-				GUI.RemoveGoodFromStock(OwnBuildingCostSystem.GetEntityIDToAddToOutStock(OwnBuildingCostSystem.TrailCosts[1]), OwnBuildingCostSystem.TrailCosts[1], OwnBuildingCostSystem.StreetMultiplier.First)
-				GUI.RemoveGoodFromStock(OwnBuildingCostSystem.GetEntityIDToAddToOutStock(OwnBuildingCostSystem.TrailCosts[3]), OwnBuildingCostSystem.TrailCosts[3], OwnBuildingCostSystem.StreetMultiplier.Second)	
+				OwnBuildingCostSystem.RemoveVariableCostsFromOutStock(3)
 			end
 		end
+		
 		OwnBuildingCostSystem.ResetTrailAndRoadCosts()
         OwnBuildingCostSystem.GameCallback_GUI_AfterRoadPlacement();
     end
@@ -460,26 +502,22 @@ OwnBuildingCostSystem.OverwriteAfterPlacement = function()
 		OwnBuildingCostSystem.GameCallback_GUI_AfterWallPlacement = GameCallback_GUI_AfterWallPlacement;
 	end
     GameCallback_GUI_AfterWallPlacement = function()
-		if g_LastPlacedParam == 49 then --Palisade
+		if g_LastPlacedParam == UpgradeCategories.PalisadeSegment then --Palisade
 			if (OwnBuildingCostSystem.PalisadeCosts ~= nil) then
-				local Costs = {Logic.GetCostForWall(113, 110, StartTurretX, StartTurretY, EndTurretX, EndTurretY)}
-				local OriginalCosts = {OwnBuildingCostSystem.GetCostForWall(113, 110, StartTurretX, StartTurretY, EndTurretX, EndTurretY)}
-				GUI.RemoveGoodFromStock(OwnBuildingCostSystem.GetEntityIDToAddToOutStock(OwnBuildingCostSystem.PalisadeCosts[1]), OwnBuildingCostSystem.PalisadeCosts[1], Costs[2] - OriginalCosts[2])
-				GUI.RemoveGoodFromStock(OwnBuildingCostSystem.GetEntityIDToAddToOutStock(OwnBuildingCostSystem.PalisadeCosts[3]), OwnBuildingCostSystem.PalisadeCosts[3], Costs[4])	
+				OwnBuildingCostSystem.RemoveVariableCostsFromOutStock(1)
 			end
-		else --Wall
+		elseif g_LastPlacedParam == GetUpgradeCategoryForClimatezone("WallSegment") then --Wall
 			if (OwnBuildingCostSystem.WallCosts ~= nil) then
-				local Costs = {Logic.GetCostForWall(140, 141, StartTurretX, StartTurretY, EndTurretX, EndTurretY)}
-				local OriginalCosts = {OwnBuildingCostSystem.GetCostForWall(140, 141, StartTurretX, StartTurretY, EndTurretX, EndTurretY)}
-				GUI.RemoveGoodFromStock(OwnBuildingCostSystem.GetEntityIDToAddToOutStock(OwnBuildingCostSystem.WallCosts[1]), OwnBuildingCostSystem.WallCosts[1], Costs[2] - OriginalCosts[2])
-				GUI.RemoveGoodFromStock(OwnBuildingCostSystem.GetEntityIDToAddToOutStock(OwnBuildingCostSystem.WallCosts[3]), OwnBuildingCostSystem.WallCosts[3], Costs[4])	
+				OwnBuildingCostSystem.RemoveVariableCostsFromOutStock(2)
 			end
 		end
+		
 		OwnBuildingCostSystem.ResetWallTurretPositions()
 		OwnBuildingCostSystem.IsInWallOrPalisadeContinueState = false
         OwnBuildingCostSystem.GameCallback_GUI_AfterWallPlacement();
     end
 end
+
 OwnBuildingCostSystem.OverwriteBuildClicked = function()
 	if OwnBuildingCostSystem.BuildClicked == nil then
 		OwnBuildingCostSystem.BuildClicked = GUI_Construction.BuildClicked;
@@ -573,7 +611,9 @@ OwnBuildingCostSystem.OverwriteBuildAbort = function()
 		OwnBuildingCostSystem.ConstructRoadAbort()
 	end
 end
+
 OwnBuildingCostSystem.OverwriteGetCostLogics = function()
+
 	if OwnBuildingCostSystem.GetEntityTypeFullCost == nil then
 		OwnBuildingCostSystem.GetEntityTypeFullCost = Logic.GetEntityTypeFullCost;
 	end	
@@ -586,21 +626,23 @@ OwnBuildingCostSystem.OverwriteGetCostLogics = function()
 			return Costs[1], CostTable[2], CostTable[3], CostTable[4]
 		end
 	end
+	
 	if OwnBuildingCostSystem.GetCostForWall == nil then
 		OwnBuildingCostSystem.GetCostForWall = Logic.GetCostForWall;
 	end	
 	Logic.GetCostForWall = function(_SegmentType, _TurretType, StartTurretX, StartTurretY, EndTurretX, EndTurretY)
-		--113 110 --Palisade
-		--140 141 --Wall_ME
+		--113 110 --Palisade Entities.B_PalisadeSegment, Entities.B_PalisadeTurret
+		--140 141 --Wall_ME Entities.B_WallSegment_ME, Entities.B_WallTurret_ME,
 		--Using Wall_ME since all Walls have the same costs anyway so no reason to differentiate between climate zones
-		if _SegmentType == 113 and _TurretType == 110 then --PalisadeSegement and PalisadeTurret
+		
+		if _SegmentType == Entities.B_PalisadeSegment and _TurretType == Entities.B_PalisadeTurret then -- Palisade
 			if (OwnBuildingCostSystem.PalisadeCosts == nil) then
 				return OwnBuildingCostSystem.GetCostForWall(_SegmentType, _TurretType, StartTurretX, StartTurretY, EndTurretX, EndTurretY)
 			else
 				local Distance = OwnBuildingCostSystem.CalculateWallOrPalisadeCosts()
 				return OwnBuildingCostSystem.PalisadeCosts[1], math.floor(Distance*OwnBuildingCostSystem.PalisadeCosts[2]), OwnBuildingCostSystem.PalisadeCosts[3], math.floor(Distance*OwnBuildingCostSystem.PalisadeCosts[4])
 			end	
-		else
+		else -- Wall
 			if (OwnBuildingCostSystem.WallCosts == nil) then
 				return OwnBuildingCostSystem.GetCostForWall(_SegmentType, _TurretType, StartTurretX, StartTurretY, EndTurretX, EndTurretY)
 			else
@@ -610,6 +652,7 @@ OwnBuildingCostSystem.OverwriteGetCostLogics = function()
 		end
 	end
 end
+
 OwnBuildingCostSystem.OverwriteVariableCostBuildings = function()
 	if OwnBuildingCostSystem.GameCallBack_GUI_BuildRoadCostChanged == nil then
 		OwnBuildingCostSystem.GameCallBack_GUI_BuildRoadCostChanged = GameCallBack_GUI_BuildRoadCostChanged;
@@ -651,7 +694,7 @@ OwnBuildingCostSystem.OverwriteVariableCostBuildings = function()
 		OwnBuildingCostSystem.GameCallBack_GUI_ConstructWallSegmentCountChanged = GameCallBack_GUI_ConstructWallSegmentCountChanged;
 	end	
 	GameCallBack_GUI_ConstructWallSegmentCountChanged = function(_SegmentType, _TurretType)
-		if _SegmentType == 113 and _TurretType == 110 then --PalisadeSegement and PalisadeTurret
+		if _SegmentType == Entities.B_PalisadeSegment and _TurretType == Entities.B_PalisadeTurret then -- Palisade
 			if OwnBuildingCostSystem.PalisadeCosts == nil then
 				OwnBuildingCostSystem.GameCallBack_GUI_ConstructWallSegmentCountChanged(_SegmentType, _TurretType)
 			else
@@ -709,7 +752,8 @@ OwnBuildingCostSystem.InitializeOwnBuildingCostSystem = function()
 	if OwnBuildingCostSystem.PlacementUpdate == nil then
 		OwnBuildingCostSystem.PlacementUpdate = GUI_Construction.PlacementUpdate;
 	end	
-	GUI_Construction.PlacementUpdate = function()		
+	GUI_Construction.PlacementUpdate = function()	
+		
 		if g_LastPlacedParam == false then --Road
 			if (OwnBuildingCostSystem.RoadCosts ~= nil) then
 				if not OwnBuildingCostSystem.AreResourcesAvailable(1, OwnBuildingCostSystem.RoadMultiplier.First, OwnBuildingCostSystem.RoadMultiplier.Second)
@@ -735,9 +779,9 @@ OwnBuildingCostSystem.InitializeOwnBuildingCostSystem = function()
 					OwnBuildingCostSystem.ShowOverlayWidget(false)
 				end
 			end
-		elseif g_LastPlacedParam == 49 then --Palisade
+		elseif g_LastPlacedParam == UpgradeCategories.PalisadeSegment then --Palisade
 			if OwnBuildingCostSystem.PalisadeCosts ~= nil then
-				local Costs = {Logic.GetCostForWall(113, 110, StartTurretX, StartTurretY, EndTurretX, EndTurretY)}
+				local Costs = {Logic.GetCostForWall(Entities.B_PalisadeSegment, Entities.B_PalisadeTurret, StartTurretX, StartTurretY, EndTurretX, EndTurretY)}
 				if not OwnBuildingCostSystem.AreResourcesAvailable(3, Costs[2], Costs[4]) and (StartTurretX ~= 1 and StartTurretY ~= 1) then
 					OwnBuildingCostSystem.ShowOverlayWidget(true)
 				else
@@ -745,8 +789,8 @@ OwnBuildingCostSystem.InitializeOwnBuildingCostSystem = function()
 				end	
 			end	
 		elseif g_LastPlacedParam == GetUpgradeCategoryForClimatezone("WallSegment") then
-			if OwnBuildingCostSystem.WallCosts ~= nil then
-				local Costs = {Logic.GetCostForWall(140, 141, StartTurretX, StartTurretY, EndTurretX, EndTurretY)}
+			if OwnBuildingCostSystem.WallCosts ~= nil then -- Just check for ME since all climate zones have the same costs anyway
+				local Costs = {Logic.GetCostForWall(Entities.B_WallSegment_ME, Entities.B_WallTurret_ME, StartTurretX, StartTurretY, EndTurretX, EndTurretY)}
 				if not OwnBuildingCostSystem.AreResourcesAvailable(2, Costs[2], Costs[4]) and (StartTurretX ~= 1 and StartTurretY ~= 1) then
 					OwnBuildingCostSystem.ShowOverlayWidget(true)
 				else
@@ -771,9 +815,9 @@ OwnBuildingCostSystem.InitializeOwnBuildingCostSystem = function()
 	GameCallback_GUI_PlacementState = function(_State, _Type)
 		--This is needed because for some reason the Wall/Palisade Continue State does not call PlacementUpdate ?
 		if OwnBuildingCostSystem.IsInWallOrPalisadeContinueState == true then
-			if g_LastPlacedParam == 49 then --Palisade
+			if g_LastPlacedParam == UpgradeCategories.PalisadeSegment then --Palisade
 				if OwnBuildingCostSystem.PalisadeCosts ~= nil then
-					local Costs = {Logic.GetCostForWall(113, 110, StartTurretX, StartTurretY, EndTurretX, EndTurretY)}
+					local Costs = {Logic.GetCostForWall(Entities.B_PalisadeSegment, Entities.B_PalisadeTurret, StartTurretX, StartTurretY, EndTurretX, EndTurretY)}
 					if not OwnBuildingCostSystem.AreResourcesAvailable(3, Costs[2], Costs[4]) and (StartTurretX ~= 1 and StartTurretY ~= 1) then
 						OwnBuildingCostSystem.ShowOverlayWidget(true)
 					else
@@ -782,7 +826,7 @@ OwnBuildingCostSystem.InitializeOwnBuildingCostSystem = function()
 				end	
 			elseif g_LastPlacedParam == GetUpgradeCategoryForClimatezone("WallSegment") then
 				if OwnBuildingCostSystem.WallCosts ~= nil then
-					local Costs = {Logic.GetCostForWall(140, 141, StartTurretX, StartTurretY, EndTurretX, EndTurretY)}
+					local Costs = {Logic.GetCostForWall(Entities.B_WallSegment_ME, Entities.B_WallTurret_ME, StartTurretX, StartTurretY, EndTurretX, EndTurretY)}
 					if not OwnBuildingCostSystem.AreResourcesAvailable(2, Costs[2], Costs[4]) and (StartTurretX ~= 1 and StartTurretY ~= 1) then
 						OwnBuildingCostSystem.ShowOverlayWidget(true)
 					else

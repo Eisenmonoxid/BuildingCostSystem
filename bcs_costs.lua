@@ -64,7 +64,7 @@ function SetMyBuildingCosts()
 	OwnBuildingCostSystem.EditWallCosts(4.2, Goods.G_Grain, 3) --Wallcosts/Mauerkosten
 	OwnBuildingCostSystem.EditPalisadeCosts(3.5, Goods.G_Gems, 5) --Palisadecosts/Palisadenkosten
 	OwnBuildingCostSystem.EditRoadCosts(3, Goods.G_Gems, 1.8) --Roadcosts/Straßenkosten
-	OwnBuildingCostSystem.EditTrailCosts(Goods.G_Herb, 1.5, Goods.G_Gems, 1) --Streetcosts/Wegkosten
+	OwnBuildingCostSystem.EditTrailCosts(Goods.G_Herb, 1.5, Goods.G_Bread, 1) --Streetcosts/Wegkosten
 	
 	OwnBuildingCostSystem.EditFestivalCosts(1.5, Goods.G_Gems, 15) --Festivalcosts/Festkosten
 	--The first arguments here are multiplicators, that means that 1.5 f.e means 1.5 times the original cost
@@ -80,8 +80,8 @@ function SetMyBuildingCosts()
 	Goods.G_RawFish, Goods.G_Grain, Goods.G_Wood, Goods.G_Iron, Goods.G_Carcass, Goods.G_Stone, Goods.G_Herb, Goods.G_Honeycomb, Goods.G_Wool, Goods.G_Milk,
 	Goods.G_Gems, Goods.G_Dye, Goods.G_Salt, Goods.G_Olibanum, Goods.G_MusicalInstrument,
 	
-	Including ALL City Goods from City Buildings, e.g. ... (THESE DO NOT WORK WITH VARIABLE COST BUILDINGS like Wall, Palisade, Street, Road)
-	Inkludierend ALLER Verbrauchsgüter von Stadtgebäuden, zum Beispiel ... (DIESE FUNKTIONIEREN NICHT MIT VARIABLEN GEBÄUDEN wie Mauer, Palisade, Straße, Weg)
+	Including ALL City Goods from City Buildings, e.g. ... 
+	Inkludierend ALLER Verbrauchsgüter von Stadtgebäuden, zum Beispiel ... 
 	
 	Goods.G_Beer, Goods.G_Bread, Goods.G_Broom, Goods.G_Cheese, Goods.G_Clothes, Goods.G_Leather, Goods.G_Medicine,
 	Goods.G_PoorBow, Goods.G_PoorSword, Goods.G_Sausage, Goods.G_SmokedFish, Goods.G_Soap, etc ...
