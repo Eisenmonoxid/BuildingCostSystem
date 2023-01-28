@@ -43,7 +43,7 @@ OwnBuildingCostSystem.HunterButtonID = nil
 OwnBuildingCostSystem.OverlayWidget = "/EndScreen"
 OwnBuildingCostSystem.OverlayIsCurrentlyShown = false
 OwnBuildingCostSystem.EnsuredQuestSystemBehaviorCompatibility = false
-OwnBuildingCostSystem.CurrentBCSVersion = "3.3 - 28.01.2023 20:19"
+OwnBuildingCostSystem.CurrentBCSVersion = "3.3 - 28.01.2023 21:32"
 
 ----------------------------------------------------------------------------------------------------------------------
 --These functions are exported to Userspace---------------------------------------------------------------------------
@@ -736,6 +736,99 @@ OwnBuildingCostSystem.OverwriteVariableCostBuildings = function()
 	end
 end
 
+OwnBuildingCostSystem.OverwriteTooltipHandling = function()
+	function GUI_Tooltip.SetCosts(_TooltipCostsContainer, _Costs, _GoodsInSettlementBoolean)
+	
+		local TooltipCostsContainerPath = XGUIEng.GetWidgetPathByID(_TooltipCostsContainer)
+		local Good1ContainerPath = TooltipCostsContainerPath .. "/1Good"
+		local Goods2ContainerPath = TooltipCostsContainerPath .. "/2Goods"
+
+		local NumberOfValidAmounts, Good1Path, Good2Path = 0, 0, 0
+
+		for i = 2, #_Costs, 2 do
+			if _Costs[i] ~= 0 then
+				NumberOfValidAmounts = NumberOfValidAmounts + 1
+			end
+		end
+
+		if NumberOfValidAmounts == 0 then
+			XGUIEng.ShowWidget(Good1ContainerPath, 0)
+			XGUIEng.ShowWidget(Goods2ContainerPath, 0)
+			return
+		elseif NumberOfValidAmounts == 1 then
+			XGUIEng.ShowWidget(Good1ContainerPath, 1)
+			XGUIEng.ShowWidget(Goods2ContainerPath, 0)
+			Good1Path = Good1ContainerPath .. "/Good1Of1"
+		elseif NumberOfValidAmounts == 2 then
+			XGUIEng.ShowWidget(Good1ContainerPath, 0)
+			XGUIEng.ShowWidget(Goods2ContainerPath, 1)
+			Good1Path = Goods2ContainerPath .. "/Good1Of2"
+			Good2Path = Goods2ContainerPath .. "/Good2Of2"
+		elseif NumberOfValidAmounts > 2 then
+			GUI.AddNote("Debug: Invalid Costs table. Not more than 2 GoodTypes allowed.")
+		end
+
+		local ContainerIndex = 1
+
+		for i = 1, #_Costs, 2 do
+			if _Costs[i + 1] ~= 0 then
+				local CostsGoodType = _Costs[i]
+				local CostsGoodAmount = _Costs[i + 1]     
+				local IconWidget, AmountWidget
+            
+				if ContainerIndex == 1 then
+					IconWidget = Good1Path .. "/Icon"
+					AmountWidget = Good1Path .. "/Amount"
+				else
+					IconWidget = Good2Path .. "/Icon"
+					AmountWidget = Good2Path .. "/Amount"
+				end
+            
+				SetIcon(IconWidget, g_TexturePositions.Goods[CostsGoodType], 44)
+            
+				local PlayerID = GUI.GetPlayerID()
+				local PlayersGoodAmount
+				
+				-- Changed
+				local ID = OwnBuildingCostSystem.GetEntityIDToAddToOutStock(CostsGoodType)
+				if ID ~= false and _GoodsInSettlementBoolean == false then
+					PlayersGoodAmount = Logic.GetAmountOnOutStockByGoodType(ID, CostsGoodType)
+				else
+					ID = GUI.GetSelectedEntity()                   
+					if ID ~= nil then
+						if Logic.GetIndexOnOutStockByGoodType(ID, CostsGoodType) == nil then
+							BuildingID = Logic.GetRefillerID(GUI.GetSelectedEntity())
+						end
+						PlayersGoodAmount = Logic.GetAmountOnOutStockByGoodType(ID, CostsGoodType)	
+						if PlayersGoodAmount == nil then
+							PlayersGoodAmount = GetPlayerGoodsInSettlement(CostsGoodType, PlayerID, true)
+						end
+					else
+						PlayersGoodAmount = GetPlayerGoodsInSettlement(CostsGoodType, PlayerID, true)
+					end
+				end
+				
+				if PlayersGoodAmount == nil then
+					PlayersGoodAmount = 0
+				end
+				-- Changed
+      
+				local Color = ""           
+				if PlayersGoodAmount < CostsGoodAmount then
+					Color = "{@script:ColorRed}"
+				end
+            
+				if CostsGoodAmount > 0 then
+					XGUIEng.SetText(AmountWidget, "{center}" .. Color .. CostsGoodAmount)
+				else
+					XGUIEng.SetText(AmountWidget, "")
+				end
+				ContainerIndex = ContainerIndex + 1
+			end
+		end
+	end
+end
+
 OwnBuildingCostSystem.InitializeOwnBuildingCostSystem = function()
 
 	OwnBuildingCostSystem.OverwriteAfterPlacement()
@@ -745,6 +838,7 @@ OwnBuildingCostSystem.InitializeOwnBuildingCostSystem = function()
 	OwnBuildingCostSystem.OverwriteVariableCostBuildings()
 	OwnBuildingCostSystem.OverwriteEndScreenCallback()
 	OwnBuildingCostSystem.FestivalCostsHandler()
+	OwnBuildingCostSystem.OverwriteTooltipHandling()
 	
 	OwnBuildingCostSystem.OverwriteOptionalBugfixFunctions() --Not needed, just nice to have
 	OwnBuildingCostSystem.EnsureQuestSystemBehaviorCompatibility() --For QSB compatibility	
