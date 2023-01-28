@@ -242,13 +242,13 @@ OwnBuildingCostSystem.RemoveVariableCostsFromOutStock = function(_type)
 	if _type == 1 then -- Palisade
 		CostTable = OwnBuildingCostSystem.PalisadeCosts
 		Costs = {Logic.GetCostForWall(Entities.B_PalisadeSegment, Entities.B_PalisadeTurret, StartTurretX, StartTurretY, EndTurretX, EndTurretY)}
-		OriginalCosts = {OwnBuildingCostSystem.GetCostForWall(Entities.B_PalisadeSegment, Entities.B_PalisadeTurret, StartTurretX, StartTurretY, EndTurretX, EndTurretY)}[2]
-		--OriginalCosts = OriginalCosts[2]
+		OriginalCosts = {OwnBuildingCostSystem.GetCostForWall(Entities.B_PalisadeSegment, Entities.B_PalisadeTurret, StartTurretX, StartTurretY, EndTurretX, EndTurretY)}
+		OriginalCosts = OriginalCosts[2]
 	elseif _type == 2 then -- Wall
 		CostTable = OwnBuildingCostSystem.WallCosts
 		Costs = {Logic.GetCostForWall(Entities.B_WallSegment_ME, Entities.B_WallTurret_ME, StartTurretX, StartTurretY, EndTurretX, EndTurretY)}
-		OriginalCosts = {OwnBuildingCostSystem.GetCostForWall(Entities.B_WallSegment_ME, Entities.B_WallTurret_ME, StartTurretX, StartTurretY, EndTurretX, EndTurretY)}[2]
-		--OriginalCosts = OriginalCosts[2]
+		OriginalCosts = {OwnBuildingCostSystem.GetCostForWall(Entities.B_WallSegment_ME, Entities.B_WallTurret_ME, StartTurretX, StartTurretY, EndTurretX, EndTurretY)}
+		OriginalCosts = OriginalCosts[2]
 	elseif _type == 3 then -- Trail
 		CostTable = OwnBuildingCostSystem.TrailCosts
 		Costs[2] = OwnBuildingCostSystem.StreetMultiplier.First
