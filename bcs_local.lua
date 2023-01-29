@@ -136,6 +136,10 @@ end
 ----------------------------------------------------------------------------------------------------------------------
 
 OwnBuildingCostSystem.GetCostByCostTable = function(_buildingType)
+	if _buildingType == nil or _buildingType == 0 then
+		return nil;
+	end
+	-- Performance saving?
 	for Type, CurrentCostTable in pairs(OwnBuildingCostSystem.BuildingCosts) do 
 		if (CurrentCostTable[1] == _buildingType) then
 			return CurrentCostTable;
@@ -753,13 +757,30 @@ OwnBuildingCostSystem.OverwriteTooltipHandling = function()
 			_Costs = {OwnBuildingCostSystem.PalisadeCosts[1], -1, OwnBuildingCostSystem.PalisadeCosts[3], -1}		
 		elseif Name == "Wall" and OwnBuildingCostSystem.WallCosts ~= nil then
 			_Costs = {OwnBuildingCostSystem.WallCosts[1], -1, OwnBuildingCostSystem.WallCosts[3], -1}	
+		elseif Name == "PlaceField" then
+			local EntityType = Logic.GetEntityType(GUI.GetSelectedEntity())
+			local UpgradeCategory
+
+			if EntityType == Entities.B_GrainFarm then
+				UpgradeCategory = GetUpgradeCategoryForClimatezone("GrainField")
+			elseif EntityType == Entities.B_Beekeeper then
+				UpgradeCategory = UpgradeCategories.BeeHive
+			elseif EntityType == Entities.B_CattleFarm then
+				UpgradeCategory = UpgradeCategories.CattlePasture
+			elseif EntityType == Entities.B_SheepFarm then
+				UpgradeCategory = UpgradeCategories.SheepPasture
+			end
+			local CostTable = OwnBuildingCostSystem.GetCostByCostTable(UpgradeCategory)
+			if (CostTable ~= nil) then
+				BCSBuildingInCostTable = true
+			end
 		else
 			local CostTable = OwnBuildingCostSystem.GetCostByCostTable(Logic.GetUpgradeCategoryByBuildingType(Entities[Name]))
 			if (CostTable ~= nil) then
 				BCSBuildingInCostTable = true
 			end
 		end
-
+				
 		for i = 2, #_Costs, 2 do
 			if _Costs[i] ~= 0 then
 				NumberOfValidAmounts = NumberOfValidAmounts + 1
@@ -1203,9 +1224,10 @@ OwnBuildingCostSystem.FestivalCostsHandler = function()
 				
 				Amount = Amount - OriginalAmount
 				
-				GUI.RemoveGoodFromStock(OwnBuildingCostSystem.GetEntityIDToAddToOutStock(Goods.G_Gold), Goods.G_Gold, Amount)
-				GUI.RemoveGoodFromStock(OwnBuildingCostSystem.GetEntityIDToAddToOutStock(OwnBuildingCostSystem.CurrentFestivalCosts[3]), OwnBuildingCostSystem.CurrentFestivalCosts[3], OwnBuildingCostSystem.CurrentFestivalCosts[4])
-
+				GUI.RemoveGoodFromStock(OwnBuildingCostSystem.GetEntityIDToAddToOutStock(Goods.G_Gold), Goods.G_Gold, Amount)				
+				local CurrentID = OwnBuildingCostSystem.GetEntityIDToAddToOutStock(OwnBuildingCostSystem.CurrentFestivalCosts[3])
+				GUI.RemoveGoodFromStock(CurrentID, OwnBuildingCostSystem.CurrentFestivalCosts[3], OwnBuildingCostSystem.CurrentFestivalCosts[4])
+				
 				GUI.StartFestival(PlayerID, _FestivalIndex)
 				StartEventMusic(MusicSystem.EventFestivalMusic, PlayerID)
 				StartKnightVoiceForPermanentSpecialAbility(Entities.U_KnightSong)
