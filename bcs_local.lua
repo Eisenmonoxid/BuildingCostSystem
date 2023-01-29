@@ -738,12 +738,27 @@ end
 
 OwnBuildingCostSystem.OverwriteTooltipHandling = function()
 	function GUI_Tooltip.SetCosts(_TooltipCostsContainer, _Costs, _GoodsInSettlementBoolean)
-	
 		local TooltipCostsContainerPath = XGUIEng.GetWidgetPathByID(_TooltipCostsContainer)
 		local Good1ContainerPath = TooltipCostsContainerPath .. "/1Good"
 		local Goods2ContainerPath = TooltipCostsContainerPath .. "/2Goods"
-
 		local NumberOfValidAmounts, Good1Path, Good2Path = 0, 0, 0
+		local BCSBuildingInCostTable = false
+		
+		local Name = XGUIEng.GetWidgetNameByID(XGUIEng.GetCurrentWidgetID())
+		if Name == "Street" and OwnBuildingCostSystem.RoadCosts ~= nil then
+			_Costs = {OwnBuildingCostSystem.RoadCosts[1], -1, OwnBuildingCostSystem.RoadCosts[3], -1}
+		elseif Name == "Trail" and OwnBuildingCostSystem.TrailCosts ~= nil then
+			_Costs = {OwnBuildingCostSystem.TrailCosts[1], -1, OwnBuildingCostSystem.TrailCosts[3], -1}	
+		elseif Name == "Palisade" and OwnBuildingCostSystem.PalisadeCosts ~= nil then
+			_Costs = {OwnBuildingCostSystem.PalisadeCosts[1], -1, OwnBuildingCostSystem.PalisadeCosts[3], -1}		
+		elseif Name == "Wall" and OwnBuildingCostSystem.WallCosts ~= nil then
+			_Costs = {OwnBuildingCostSystem.WallCosts[1], -1, OwnBuildingCostSystem.WallCosts[3], -1}	
+		else
+			local CostTable = OwnBuildingCostSystem.GetCostByCostTable(Logic.GetUpgradeCategoryByBuildingType(Entities[Name]))
+			if (CostTable ~= nil) then
+				BCSBuildingInCostTable = true
+			end
+		end
 
 		for i = 2, #_Costs, 2 do
 			if _Costs[i] ~= 0 then
@@ -787,27 +802,38 @@ OwnBuildingCostSystem.OverwriteTooltipHandling = function()
 				SetIcon(IconWidget, g_TexturePositions.Goods[CostsGoodType], 44)
             
 				local PlayerID = GUI.GetPlayerID()
-				local PlayersGoodAmount
+				local PlayersGoodAmount, ID
 				
 				-- Changed
 				local ID = OwnBuildingCostSystem.GetEntityIDToAddToOutStock(CostsGoodType)
-				if ID ~= false and _GoodsInSettlementBoolean == false then
-					PlayersGoodAmount = Logic.GetAmountOnOutStockByGoodType(ID, CostsGoodType)
-				else
-					ID = GUI.GetSelectedEntity()                   
-					if ID ~= nil then
-						if Logic.GetIndexOnOutStockByGoodType(ID, CostsGoodType) == nil then
-							BuildingID = Logic.GetRefillerID(GUI.GetSelectedEntity())
-						end
-						PlayersGoodAmount = Logic.GetAmountOnOutStockByGoodType(ID, CostsGoodType)	
-						if PlayersGoodAmount == nil then
-							PlayersGoodAmount = GetPlayerGoodsInSettlement(CostsGoodType, PlayerID, true)
-						end
+				if (ID == false and BCSBuildingInCostTable == true) or _GoodsInSettlementBoolean == true then
+					PlayersGoodAmount = GetPlayerGoodsInSettlement(CostsGoodType, PlayerID, true)
+				else 
+				    local IsInOutStock, BuildingID           
+					if CostsGoodType == Goods.G_Gold then
+						BuildingID = Logic.GetHeadquarters(PlayerID)
+						IsInOutStock = Logic.GetIndexOnOutStockByGoodType(BuildingID, CostsGoodType)
 					else
-						PlayersGoodAmount = GetPlayerGoodsInSettlement(CostsGoodType, PlayerID, true)
+						BuildingID = Logic.GetStoreHouse(PlayerID)
+						IsInOutStock = Logic.GetIndexOnOutStockByGoodType(BuildingID, CostsGoodType)
 					end
-				end
-				
+                
+					if IsInOutStock ~= -1 then
+						PlayersGoodAmount = Logic.GetAmountOnOutStockByGoodType(BuildingID, CostsGoodType)
+					else
+						BuildingID = GUI.GetSelectedEntity()
+                    
+						if BuildingID ~= nil then
+							if Logic.GetIndexOnOutStockByGoodType(BuildingID, CostsGoodType) == nil then
+								BuildingID = Logic.GetRefillerID(GUI.GetSelectedEntity())
+							end
+                        
+							PlayersGoodAmount = Logic.GetAmountOnOutStockByGoodType(BuildingID, CostsGoodType)
+						else
+							PlayersGoodAmount = 0
+						end
+					end
+				end		
 				if PlayersGoodAmount == nil then
 					PlayersGoodAmount = 0
 				end
@@ -964,24 +990,7 @@ OwnBuildingCostSystem.InitializeOwnBuildingCostSystem = function()
 		end
 		return OwnBuildingCostSystem.AreCostsAffordable(_Costs, _GoodsInSettlementBoolean)
 	end
-	
-	if OwnBuildingCostSystem.SetCosts == nil then
-		OwnBuildingCostSystem.SetCosts = GUI_Tooltip.SetCosts;
-	end		
-	GUI_Tooltip.SetCosts = function(_TooltipCostsContainer, _Costs, _GoodsInSettlementBoolean)
-		local Name = XGUIEng.GetWidgetNameByID(XGUIEng.GetCurrentWidgetID())
-		if Name == "Street" and OwnBuildingCostSystem.RoadCosts ~= nil then
-			_Costs = {OwnBuildingCostSystem.RoadCosts[1], -1, OwnBuildingCostSystem.RoadCosts[3], -1}
-		elseif Name == "Trail" and OwnBuildingCostSystem.TrailCosts ~= nil then
-			_Costs = {OwnBuildingCostSystem.TrailCosts[1], -1, OwnBuildingCostSystem.TrailCosts[3], -1}	
-		elseif Name == "Palisade" and OwnBuildingCostSystem.PalisadeCosts ~= nil then
-			_Costs = {OwnBuildingCostSystem.PalisadeCosts[1], -1, OwnBuildingCostSystem.PalisadeCosts[3], -1}		
-		elseif Name == "Wall" and OwnBuildingCostSystem.WallCosts ~= nil then
-			_Costs = {OwnBuildingCostSystem.WallCosts[1], -1, OwnBuildingCostSystem.WallCosts[3], -1}					
-		end
-		OwnBuildingCostSystem.SetCosts(_TooltipCostsContainer, _Costs, _GoodsInSettlementBoolean)
-	end
-	
+		
 	-- Trails don't work when called directly 
 	function KeyBindings_BuildLastPlaced()
 		if g_LastPlacedFunction ~= nil and g_LastPlacedParam == true then -- Trail
