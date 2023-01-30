@@ -43,7 +43,7 @@ OwnBuildingCostSystem.HunterButtonID = nil
 OwnBuildingCostSystem.OverlayWidget = "/EndScreen"
 OwnBuildingCostSystem.OverlayIsCurrentlyShown = false
 OwnBuildingCostSystem.EnsuredQuestSystemBehaviorCompatibility = false
-OwnBuildingCostSystem.CurrentBCSVersion = "3.3 - 28.01.2023 21:32"
+OwnBuildingCostSystem.CurrentBCSVersion = "3.4 - 30.01.2023 01:38"
 
 ----------------------------------------------------------------------------------------------------------------------
 --These functions are exported to Userspace---------------------------------------------------------------------------
