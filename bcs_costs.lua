@@ -64,7 +64,7 @@ function SetMyBuildingCosts()
 	OwnBuildingCostSystem.EditWallCosts(4.2, Goods.G_Grain, 3) --Wallcosts/Mauerkosten (No production goods)
 	OwnBuildingCostSystem.EditPalisadeCosts(3.5, Goods.G_Gems, 5) --Palisadecosts/Palisadenkosten (No production goods)
 	OwnBuildingCostSystem.EditRoadCosts(3, Goods.G_Gems, 1.8) --Roadcosts/Straßenkosten (No production goods)
-	OwnBuildingCostSystem.EditTrailCosts(Goods.G_Herb, 1.5, Goods.G_Bread, 1) --Streetcosts/Wegkosten (No production goods)
+	OwnBuildingCostSystem.EditTrailCosts(Goods.G_Herb, 1.5, Goods.G_Wood, 1) --Streetcosts/Wegkosten (No production goods)
 	
 	OwnBuildingCostSystem.EditFestivalCosts(1.5, Goods.G_Gems, 15) --Festivalcosts/Festkosten (No production goods)
 	--The first arguments here are multiplicators, that means that 1.5 f.e means 1.5 times the original cost
