@@ -61,12 +61,12 @@ function SetMyBuildingCosts()
 	OwnBuildingCostSystem.EditBuildingCosts(UpgradeCategories.PalisadeGate, 10, Goods.G_Dye, 6)
 	OwnBuildingCostSystem.EditBuildingCosts(UpgradeCategories.WallGate_SouthEurope, 16, Goods.G_Olibanum, 6) --Replace SouthEurope with your climate zone! / Ersetze SouthEurope mit deiner derzeitigen Klimazone!
 	--Buildings without fixed cost
-	OwnBuildingCostSystem.EditWallCosts(4.2, Goods.G_Grain, 3) --Wallcosts/Mauerkosten (No production goods)
-	OwnBuildingCostSystem.EditPalisadeCosts(3.5, Goods.G_Gems, 5) --Palisadecosts/Palisadenkosten (No production goods)
-	OwnBuildingCostSystem.EditRoadCosts(3, Goods.G_Gems, 1.8) --Roadcosts/Straßenkosten (No production goods)
-	OwnBuildingCostSystem.EditTrailCosts(Goods.G_Herb, 1.5, Goods.G_Wood, 1) --Streetcosts/Wegkosten (No production goods)
+	OwnBuildingCostSystem.EditWallCosts(4.2, Goods.G_Grain, 3) --Wallcosts/Mauerkosten (No production goods/Keine Verbrauchsgüter)
+	OwnBuildingCostSystem.EditPalisadeCosts(3.5, Goods.G_Gems, 5) --Palisadecosts/Palisadenkosten (No production goods/Keine Verbrauchsgüter)
+	OwnBuildingCostSystem.EditRoadCosts(3, Goods.G_Gems, 1.8) --Roadcosts/Straßenkosten (No production goods/Keine Verbrauchsgüter)
+	OwnBuildingCostSystem.EditTrailCosts(Goods.G_Herb, 1.5, Goods.G_Wood, 1) --Streetcosts/Wegkosten (No production goods/Keine Verbrauchsgüter)
 	
-	OwnBuildingCostSystem.EditFestivalCosts(1.5, Goods.G_Gems, 15) --Festivalcosts/Festkosten (No production goods)
+	OwnBuildingCostSystem.EditFestivalCosts(1.5, Goods.G_Gems, 15) --Festivalcosts/Festkosten (No production goods/Keine Verbrauchsgüter)
 	--The first arguments here are multiplicators, that means that 1.5 f.e means 1.5 times the original cost
 	--Die ersten Argumente hier sind Multiplikatoren, das bedeutet das 1.5 heißt: 1.5 Mal die originalen Kosten
 	
@@ -101,6 +101,11 @@ function SetMyBuildingCosts()
 	
 	--Diese Funktion hier entscheidet, ob Verbrauchsgüter (Goods.G_Sausage, etc.) beim Abriss zurückerstattet werden.
 	OwnBuildingCostSystem.SetRefundCityGoods(true)
+	
+	--This function here sets whether city goods (Goods.G_Sausage, etc.) on the marketplace are counted towards the costs.
+	
+	--Diese Funktion hier entscheidet, ob Verbrauchsgüter (Goods.G_Sausage, etc.) als Karren auf dem Marktplatz zu den Kosten zählen.
+	OwnBuildingCostSystem.SetCountGoodsOnMarketplace(true)
 end
 
 function ResetMyBuildingCosts()

@@ -27,7 +27,7 @@ OwnBuildingCostSystem.CurrentExpectedBuildingType = nil
 OwnBuildingCostSystem.CurrentKnockDownFactor = 0.5 -- Half the new good cost is refunded at knock down
 OwnBuildingCostSystem.CurrentOriginalGoodKnockDownFactor = 0.2
 OwnBuildingCostSystem.IsInWallOrPalisadeContinueState = false
-OwnBuildingCostSystem.MarketplaceGoodsCount = true -- Changing this is not yet implemented
+OwnBuildingCostSystem.MarketplaceGoodsCount = false
 OwnBuildingCostSystem.RefundCityGoods = true
 
 StartTurretX = 1 -- Variables from the Original Lua Game Script
@@ -131,6 +131,10 @@ OwnBuildingCostSystem.SetRefundCityGoods = function(_flag)
 	OwnBuildingCostSystem.RefundCityGoods = _flag
 end
 
+OwnBuildingCostSystem.SetCountGoodsOnMarketplace = function(_flag)
+	OwnBuildingCostSystem.MarketplaceGoodsCount = _flag
+end
+
 ----------------------------------------------------------------------------------------------------------------------
 --These functions are used internally and should not be called by the User--------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------
@@ -139,16 +143,21 @@ OwnBuildingCostSystem.GetCostByCostTable = function(_buildingType)
 	if _buildingType == nil or _buildingType == 0 then
 		return nil;
 	end
-	-- Performance saving?
+
 	for Type, CurrentCostTable in pairs(OwnBuildingCostSystem.BuildingCosts) do 
 		if (CurrentCostTable[1] == _buildingType) then
 			return CurrentCostTable;
 		end
 	end
+	
 	return nil
 end
 
 OwnBuildingCostSystem.UpdateCostsInCostTable = function(_buildingType, _newCostTable)
+	if _buildingType == nil or _buildingType == 0 then
+		return nil;
+	end
+	
 	for Type, CurrentCostTable in pairs(OwnBuildingCostSystem.BuildingCosts) do 
 		if (CurrentCostTable[1] == _buildingType) then
 			if _newCostTable == nil then
@@ -162,11 +171,16 @@ OwnBuildingCostSystem.UpdateCostsInCostTable = function(_buildingType, _newCostT
 end
 
 OwnBuildingCostSystem.GetCostByBuildingIDTable = function(_EntityID)
+	if _EntityID == nil or _EntityID == 0 then
+		return nil;
+	end
+
 	for Type, CurrentCostTable in pairs(OwnBuildingCostSystem.BuildingIDTable) do 
 		if (CurrentCostTable[1] == _EntityID) then
 			return CurrentCostTable, Type;
 		end
 	end
+	
 	return nil
 end
 
@@ -194,7 +208,7 @@ OwnBuildingCostSystem.RemoveCostsFromOutStock = function(_buildingType)
 
 	local CurrentID = OwnBuildingCostSystem.GetEntityIDToAddToOutStock(FGood)
 	if CurrentID == false then
-		OwnBuildingCostSystem.RemoveCostsFromOutStockCityGoods(FGood, FAmountToRemove)
+		OwnBuildingCostSystem.RemoveCostsFromOutStockCityGoods(FGood, FAmountToRemove, PlayerID, OwnBuildingCostSystem.MarketplaceGoodsCount)
 	else
 		FGoodCurrentAmount = Logic.GetAmountOnOutStockByGoodType(CurrentID, FGood)
 		if FGoodCurrentAmount < FAmountToRemove then
@@ -206,7 +220,7 @@ OwnBuildingCostSystem.RemoveCostsFromOutStock = function(_buildingType)
 	
 	CurrentID = OwnBuildingCostSystem.GetEntityIDToAddToOutStock(SGood)
 	if CurrentID == false then
-		OwnBuildingCostSystem.RemoveCostsFromOutStockCityGoods(SGood, SAmountToRemove)
+		OwnBuildingCostSystem.RemoveCostsFromOutStockCityGoods(SGood, SAmountToRemove, PlayerID, OwnBuildingCostSystem.MarketplaceGoodsCount)
 	else
 		SGoodCurrentAmount = Logic.GetAmountOnOutStockByGoodType(CurrentID, SGood)
 		if SGoodCurrentAmount < SAmountToRemove then
@@ -217,8 +231,36 @@ OwnBuildingCostSystem.RemoveCostsFromOutStock = function(_buildingType)
 	end
 end
 
-OwnBuildingCostSystem.RemoveCostsFromOutStockCityGoods = function(_goodType, _goodAmount)
-	local PlayerID = GUI.GetPlayerID()
+OwnBuildingCostSystem.GetAmountOfGoodsInSettlement = function(_goodType, _playerID, _countMarketplace)
+	local CurrentID = OwnBuildingCostSystem.GetEntityIDToAddToOutStock(_goodType)
+	
+	if CurrentID ~= false then
+		return Logic.GetAmountOnOutStockByGoodType(CurrentID, _goodType)	
+	end
+	
+	local Amount = 0
+	local BuildingTypes = {Logic.GetBuildingTypesProducingGood(_goodType)}
+	local Buildings = GetPlayerEntities(_playerID, BuildingTypes[1])
+
+    for i = 1, #Buildings, 1 do
+		Amount = Amount + Logic.GetAmountOnOutStockByGoodType(Buildings[i], _goodType)
+    end
+	
+	if _countMarketplace == true then
+		local MarketSlots = {Logic.GetPlayerEntities(_playerID, Entities.B_Marketslot, 5, 0)}
+        for j = 2, #MarketSlots, 1 do
+            if Logic.GetIndexOnOutStockByGoodType(MarketSlots[j], _goodType) ~= -1 then
+                local GoodAmountOnMarketplace = Logic.GetAmountOnOutStockByGoodType(MarketSlots[j], _goodType)
+				Amount = Amount + GoodAmountOnMarketplace
+            end
+        end
+	end
+	
+	return Amount
+end
+
+OwnBuildingCostSystem.RemoveCostsFromOutStockCityGoods = function(_goodType, _goodAmount, _playerID, _countMarketplace)
+	local PlayerID = _playerID
 	local AmountToRemove = _goodAmount
 	local BuildingTypes, Buildings
 	
@@ -236,12 +278,29 @@ OwnBuildingCostSystem.RemoveCostsFromOutStockCityGoods = function(_goodType, _go
 			break;
 		end
     end
+	
+	if _countMarketplace == true and AmountToRemove > 0 then
+		local MarketSlots = {Logic.GetPlayerEntities(_playerID, Entities.B_Marketslot, 5, 0)}
+        for j = 2, #MarketSlots, 1 do
+            if Logic.GetIndexOnOutStockByGoodType(MarketSlots[j], _goodType) ~= -1 then
+                CurrentOutStock = Logic.GetAmountOnOutStockByGoodType(MarketSlots[j], _goodType)
+				if CurrentOutStock <= AmountToRemove then
+					GUI.RemoveGoodFromStock(MarketSlots[j], _goodType, CurrentOutStock)
+					AmountToRemove = AmountToRemove - CurrentOutStock
+				else
+					GUI.RemoveGoodFromStock(MarketSlots[j], _goodType, AmountToRemove)
+					break;
+				end
+            end
+        end
+	end
 end
 
 OwnBuildingCostSystem.RemoveVariableCostsFromOutStock = function(_type)
 	-- 1 = Palisade, 2 = Wall, 3 = Trail, 4 = Road
 	local CostTable, OriginalCosts, CurrentID
 	local Costs = {0,0,0,0} -- Just to be sure
+	local PlayerID = GUI.GetPlayerID()
 	
 	if _type == 1 then -- Palisade
 		CostTable = OwnBuildingCostSystem.PalisadeCosts
@@ -269,14 +328,14 @@ OwnBuildingCostSystem.RemoveVariableCostsFromOutStock = function(_type)
 	
 	CurrentID = OwnBuildingCostSystem.GetEntityIDToAddToOutStock(CostTable[1])
 	if CurrentID == false then
-		OwnBuildingCostSystem.RemoveCostsFromOutStockCityGoods(CostTable[1], Costs[2] - OriginalCosts)
+		OwnBuildingCostSystem.RemoveCostsFromOutStockCityGoods(CostTable[1], Costs[2] - OriginalCosts, PlayerID, OwnBuildingCostSystem.MarketplaceGoodsCount)
 	else
 		GUI.RemoveGoodFromStock(CurrentID, CostTable[1], Costs[2] - OriginalCosts)
 	end
 	
 	CurrentID = OwnBuildingCostSystem.GetEntityIDToAddToOutStock(CostTable[3])
 	if CurrentID == false then
-		OwnBuildingCostSystem.RemoveCostsFromOutStockCityGoods(CostTable[3], Costs[4])
+		OwnBuildingCostSystem.RemoveCostsFromOutStockCityGoods(CostTable[3], Costs[4], PlayerID, OwnBuildingCostSystem.MarketplaceGoodsCount)
 	else
 		GUI.RemoveGoodFromStock(CurrentID, CostTable[3], Costs[4])
 	end
@@ -304,8 +363,10 @@ OwnBuildingCostSystem.AreResourcesAvailable = function(_upgradeCategory, _FGoodA
 	end
 	
 	local AmountOfFirstGood, AmountOfSecondGood
-	AmountOfFirstGood = GetPlayerGoodsInSettlement(Costs[1], PlayerID, OwnBuildingCostSystem.MarketplaceGoodsCount)
-	AmountOfSecondGood = GetPlayerGoodsInSettlement(Costs[3], PlayerID, OwnBuildingCostSystem.MarketplaceGoodsCount)
+	--AmountOfFirstGood = GetPlayerGoodsInSettlement(Costs[1], PlayerID, OwnBuildingCostSystem.MarketplaceGoodsCount)
+	--AmountOfSecondGood = GetPlayerGoodsInSettlement(Costs[3], PlayerID, OwnBuildingCostSystem.MarketplaceGoodsCount)
+	AmountOfFirstGood = OwnBuildingCostSystem.GetAmountOfGoodsInSettlement(Costs[1], PlayerID, OwnBuildingCostSystem.MarketplaceGoodsCount)
+	AmountOfSecondGood = OwnBuildingCostSystem.GetAmountOfGoodsInSettlement(Costs[3], PlayerID, OwnBuildingCostSystem.MarketplaceGoodsCount)
 	
 	if (AmountOfFirstGood < _FGoodAmount or AmountOfSecondGood < _SGoodAmount) then
 		return false
@@ -643,14 +704,14 @@ OwnBuildingCostSystem.OverwriteGetCostLogics = function()
 			if (OwnBuildingCostSystem.PalisadeCosts == nil) then
 				return OwnBuildingCostSystem.GetCostForWall(_SegmentType, _TurretType, StartTurretX, StartTurretY, EndTurretX, EndTurretY)
 			else
-				local Distance = OwnBuildingCostSystem.CalculateWallOrPalisadeCosts()
+				local Distance = OwnBuildingCostSystem.CalculateVariableCosts(StartTurretX, StartTurretY, EndTurretX, EndTurretY)
 				return OwnBuildingCostSystem.PalisadeCosts[1], math.floor(Distance*OwnBuildingCostSystem.PalisadeCosts[2]), OwnBuildingCostSystem.PalisadeCosts[3], math.floor(Distance*OwnBuildingCostSystem.PalisadeCosts[4])
 			end	
 		else -- Wall
 			if (OwnBuildingCostSystem.WallCosts == nil) then
 				return OwnBuildingCostSystem.GetCostForWall(_SegmentType, _TurretType, StartTurretX, StartTurretY, EndTurretX, EndTurretY)
 			else
-				local Distance = OwnBuildingCostSystem.CalculateWallOrPalisadeCosts()
+				local Distance = OwnBuildingCostSystem.CalculateVariableCosts(StartTurretX, StartTurretY, EndTurretX, EndTurretY)
 				return OwnBuildingCostSystem.WallCosts[1], math.floor(Distance*OwnBuildingCostSystem.WallCosts[2]), OwnBuildingCostSystem.WallCosts[3], math.floor(Distance*OwnBuildingCostSystem.WallCosts[4])
 			end		
 		end
@@ -827,7 +888,10 @@ OwnBuildingCostSystem.OverwriteTooltipHandling = function()
 				
 				-- Changed
 				local ID = OwnBuildingCostSystem.GetEntityIDToAddToOutStock(CostsGoodType)
-				if (ID == false and BCSBuildingInCostTable == true) or _GoodsInSettlementBoolean == true then
+				if (ID == false and BCSBuildingInCostTable == true) then
+					--PlayersGoodAmount = GetPlayerGoodsInSettlement(CostsGoodType, PlayerID, true)
+					PlayersGoodAmount = OwnBuildingCostSystem.GetAmountOfGoodsInSettlement(CostsGoodType, PlayerID, OwnBuildingCostSystem.MarketplaceGoodsCount)
+				elseif _GoodsInSettlementBoolean == true then
 					PlayersGoodAmount = GetPlayerGoodsInSettlement(CostsGoodType, PlayerID, true)
 				else 
 				    local IsInOutStock, BuildingID           
@@ -1111,12 +1175,16 @@ OwnBuildingCostSystem.ShowOverlayWidget = function(_flag)
 	end
 end
 
+OwnBuildingCostSystem.CalculateVariableCosts = function(_startX, _startY, _endX, _endY)
+	local xDistance = math.abs(_startX - _endX)
+	local yDistance = math.abs(_startY - _endY)
+	return ((math.sqrt((xDistance ^ 2) + (yDistance ^ 2))) / 1000)
+end
+
 OwnBuildingCostSystem.CalculateStreetCosts = function()
 	local posX, posY = GUI.Debug_GetMapPositionUnderMouse()
 	if OwnBuildingCostSystem.StreetMultiplier.CurrentX ~= 1 and OwnBuildingCostSystem.StreetMultiplier.CurrentY ~= 1 then
-		local xDistance = math.abs(posX - OwnBuildingCostSystem.StreetMultiplier.CurrentX);
-		local yDistance = math.abs(posY - OwnBuildingCostSystem.StreetMultiplier.CurrentY);
-		local Distance = (math.sqrt((xDistance ^ 2) + (yDistance ^ 2))) / 1000
+		local Distance = OwnBuildingCostSystem.CalculateVariableCosts(posX, posY, OwnBuildingCostSystem.StreetMultiplier.CurrentX, OwnBuildingCostSystem.StreetMultiplier.CurrentY)
 		local FirstCostDistance = math.floor(Distance * OwnBuildingCostSystem.TrailCosts[2])
 		local SecondCostDistance = math.floor(Distance * OwnBuildingCostSystem.TrailCosts[4])
 		if FirstCostDistance < 1 then
@@ -1129,13 +1197,6 @@ OwnBuildingCostSystem.CalculateStreetCosts = function()
 	else
 		return 1, 1
 	end
-end
-
-OwnBuildingCostSystem.CalculateWallOrPalisadeCosts = function()
-	local xDistance = math.abs(StartTurretX - EndTurretX);
-	local yDistance = math.abs(StartTurretY - EndTurretY);
-	local Distance = (math.sqrt((xDistance ^ 2) + (yDistance ^2 ))) / 1000
-	return Distance;
 end
 
 OwnBuildingCostSystem.ResetTrailAndRoadCosts = function()
