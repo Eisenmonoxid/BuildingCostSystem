@@ -810,8 +810,10 @@ OwnBuildingCostSystem.OverwriteTooltipHandling = function()
 		local Goods2ContainerPath = TooltipCostsContainerPath .. "/2Goods"
 		local NumberOfValidAmounts, Good1Path, Good2Path = 0, 0, 0
 		local BCSBuildingInCostTable = false
+		local IsFestivalCosts = false
 		
 		local Name = XGUIEng.GetWidgetNameByID(XGUIEng.GetCurrentWidgetID())
+		Message(Name)
 		if Name == "Street" and OwnBuildingCostSystem.RoadCosts ~= nil then
 			_Costs = {OwnBuildingCostSystem.RoadCosts[1], -1, OwnBuildingCostSystem.RoadCosts[3], -1}
 		elseif Name == "Trail" and OwnBuildingCostSystem.TrailCosts ~= nil then
@@ -820,6 +822,8 @@ OwnBuildingCostSystem.OverwriteTooltipHandling = function()
 			_Costs = {OwnBuildingCostSystem.PalisadeCosts[1], -1, OwnBuildingCostSystem.PalisadeCosts[3], -1}		
 		elseif Name == "Wall" and OwnBuildingCostSystem.WallCosts ~= nil then
 			_Costs = {OwnBuildingCostSystem.WallCosts[1], -1, OwnBuildingCostSystem.WallCosts[3], -1}	
+		elseif Name == "StartFestival" and OwnBuildingCostSystem.CurrentFestivalCosts ~= nil then
+			IsFestivalCosts = true
 		elseif Name == "PlaceField" then
 			local EntityType = Logic.GetEntityType(GUI.GetSelectedEntity())
 			local UpgradeCategory
@@ -893,6 +897,8 @@ OwnBuildingCostSystem.OverwriteTooltipHandling = function()
 				if (ID == false and BCSBuildingInCostTable == true) then
 					--PlayersGoodAmount = GetPlayerGoodsInSettlement(CostsGoodType, PlayerID, true)
 					PlayersGoodAmount = OwnBuildingCostSystem.GetAmountOfGoodsInSettlement(CostsGoodType, PlayerID, OwnBuildingCostSystem.MarketplaceGoodsCount)
+				elseif IsFestivalCosts == true then
+					PlayersGoodAmount = OwnBuildingCostSystem.GetAmountOfGoodsInSettlement(CostsGoodType, PlayerID, false)
 				elseif _GoodsInSettlementBoolean == true then
 					PlayersGoodAmount = GetPlayerGoodsInSettlement(CostsGoodType, PlayerID, true)
 				else 
