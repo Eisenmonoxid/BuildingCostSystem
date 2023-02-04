@@ -43,7 +43,7 @@ OwnBuildingCostSystem.HunterButtonID = nil
 OwnBuildingCostSystem.OverlayWidget = "/EndScreen"
 OwnBuildingCostSystem.OverlayIsCurrentlyShown = false
 OwnBuildingCostSystem.EnsuredQuestSystemBehaviorCompatibility = false
-OwnBuildingCostSystem.CurrentBCSVersion = "3.4 - 30.01.2023 01:38"
+OwnBuildingCostSystem.CurrentBCSVersion = "3.5 - 04.02.2023 05:31"
 
 ----------------------------------------------------------------------------------------------------------------------
 --These functions are exported to Userspace---------------------------------------------------------------------------
@@ -619,6 +619,7 @@ OwnBuildingCostSystem.OverwriteBuildClicked = function()
 		GUI.CancelState()
 		OwnBuildingCostSystem.HasCurrentBuildingOwnBuildingCosts(_BuildingType)
 		g_LastPlacedParam = _BuildingType
+		OwnBuildingCostSystem.IsInWallOrPalisadeContinueState = false
 		OwnBuildingCostSystem.BuildWallGateClicked(_BuildingType)
 	end
 	
@@ -633,6 +634,7 @@ OwnBuildingCostSystem.OverwriteBuildClicked = function()
 		GUI.CancelState()
 		OwnBuildingCostSystem.SetAwaitingVariable(false)
 		g_LastPlacedParam = _IsTrail
+		OwnBuildingCostSystem.IsInWallOrPalisadeContinueState = false
 		OwnBuildingCostSystem.BuildStreetClicked(_IsTrail)
 	end
 	
@@ -968,7 +970,7 @@ OwnBuildingCostSystem.InitializeOwnBuildingCostSystem = function()
 					OwnBuildingCostSystem.ShowOverlayWidget(false)
 				end
 			end	
-		elseif g_LastPlacedParam == true then
+		elseif g_LastPlacedParam == true then --Trail
 			if (OwnBuildingCostSystem.TrailCosts ~= nil) then
 				local First, Second = OwnBuildingCostSystem.CalculateStreetCosts()
 				
@@ -984,7 +986,7 @@ OwnBuildingCostSystem.InitializeOwnBuildingCostSystem = function()
 					OwnBuildingCostSystem.ShowOverlayWidget(false)
 				end
 			end
-		elseif g_LastPlacedParam == UpgradeCategories.PalisadeSegment then --Palisade
+		elseif g_LastPlacedParam == UpgradeCategories.PalisadeSegment then 
 			if OwnBuildingCostSystem.PalisadeCosts ~= nil then
 				local Costs = {Logic.GetCostForWall(Entities.B_PalisadeSegment, Entities.B_PalisadeTurret, StartTurretX, StartTurretY, EndTurretX, EndTurretY)}
 				if not OwnBuildingCostSystem.AreResourcesAvailable(3, Costs[2], Costs[4]) and (StartTurretX ~= 1 and StartTurretY ~= 1) then
@@ -1011,6 +1013,7 @@ OwnBuildingCostSystem.InitializeOwnBuildingCostSystem = function()
 				end
 			end	
 		end
+		
 		OwnBuildingCostSystem.PlacementUpdate()	
 	end
 	
@@ -1048,12 +1051,17 @@ OwnBuildingCostSystem.InitializeOwnBuildingCostSystem = function()
 	end	
 	GameCallback_GUI_StateChanged = function(_StateNameID, _Armed)
 		OwnBuildingCostSystem.GUI_StateChanged(_StateNameID, _Armed)
+		
+		OwnBuildingCostSystem.ShowOverlayWidget(false)		
+		-- TODO: What happens when the player switches from e.g. PlaceBuilding into PlaceBuilding? 
+		-- Does this case work too?
+		-- CAN'T HAPPEN because all Building functions call GUI.CancelState() which should set the state to selection?
+		-- I Guess ;)
 		if ((_StateNameID ~= GUI.GetStateNameByID("PlaceBuilding")) 
 			and (_StateNameID ~= GUI.GetStateNameByID("PlaceWallGate"))
 			and (_StateNameID ~= GUI.GetStateNameByID("PlaceWall"))
 			and (_StateNameID ~= GUI.GetStateNameByID("PlaceRoad"))) then
 				OwnBuildingCostSystem.SetAwaitingVariable(false)
-				OwnBuildingCostSystem.ShowOverlayWidget(false)
 				OwnBuildingCostSystem.ResetWallTurretPositions()
 				OwnBuildingCostSystem.ResetTrailAndRoadCosts()
 				GUI.SendScriptCommand([[OwnBuildingCostSystem.AreBuildingCostsAvailable = nil]])
@@ -1170,7 +1178,7 @@ OwnBuildingCostSystem.ShowOverlayWidget = function(_flag)
 			XGUIEng.ShowAllSubWidgets(OwnBuildingCostSystem.OverlayWidget, 0)
 			XGUIEng.ShowWidget(OwnBuildingCostSystem.OverlayWidget, 0)
 			OwnBuildingCostSystem.OverlayIsCurrentlyShown = false
-			GUI.SendScriptCommand([[OwnBuildingCostSystem.AreBuildingCostsAvailable = true]])
+			GUI.SendScriptCommand([[OwnBuildingCostSystem.AreBuildingCostsAvailable = nil]])
 		end
 	end
 end
@@ -1285,10 +1293,16 @@ OwnBuildingCostSystem.FestivalCostsHandler = function()
 				
 				Amount = Amount - OriginalAmount
 				
-				GUI.RemoveGoodFromStock(OwnBuildingCostSystem.GetEntityIDToAddToOutStock(Goods.G_Gold), Goods.G_Gold, Amount)				
+				GUI.RemoveGoodFromStock(OwnBuildingCostSystem.GetEntityIDToAddToOutStock(Goods.G_Gold), Goods.G_Gold, Amount)	
+
+				-- Can be city goods too
 				local CurrentID = OwnBuildingCostSystem.GetEntityIDToAddToOutStock(OwnBuildingCostSystem.CurrentFestivalCosts[3])
-				GUI.RemoveGoodFromStock(CurrentID, OwnBuildingCostSystem.CurrentFestivalCosts[3], OwnBuildingCostSystem.CurrentFestivalCosts[4])
-				
+				if CurrentID == false then
+					OwnBuildingCostSystem.RemoveCostsFromOutStockCityGoods(OwnBuildingCostSystem.CurrentFestivalCosts[3], OwnBuildingCostSystem.CurrentFestivalCosts[4], PlayerID, false)
+				else
+					GUI.RemoveGoodFromStock(CurrentID, OwnBuildingCostSystem.CurrentFestivalCosts[3], OwnBuildingCostSystem.CurrentFestivalCosts[4])				
+				end
+			
 				GUI.StartFestival(PlayerID, _FestivalIndex)
 				StartEventMusic(MusicSystem.EventFestivalMusic, PlayerID)
 				StartKnightVoiceForPermanentSpecialAbility(Entities.U_KnightSong)
@@ -1304,10 +1318,17 @@ end
 OwnBuildingCostSystem.AreFestivalResourcesAvailable = function(_PlayerID, _FestivalIndex)
 	local AmountOfFirstGood, AmountOfSecondGood;
 	local Costs = {OwnBuildingCostSystem.GetFestivalCost(_PlayerID, _FestivalIndex)}
-
+	
+	-- First one is always gold
 	AmountOfFirstGood = Logic.GetAmountOnOutStockByGoodType(OwnBuildingCostSystem.GetEntityIDToAddToOutStock(OwnBuildingCostSystem.CurrentFestivalCosts[1]), OwnBuildingCostSystem.CurrentFestivalCosts[1])
-	AmountOfSecondGood = Logic.GetAmountOnOutStockByGoodType(OwnBuildingCostSystem.GetEntityIDToAddToOutStock(OwnBuildingCostSystem.CurrentFestivalCosts[3]), OwnBuildingCostSystem.CurrentFestivalCosts[3])
-
+	
+	local CurrentID = OwnBuildingCostSystem.GetEntityIDToAddToOutStock(OwnBuildingCostSystem.CurrentFestivalCosts[3])
+	if CurrentID == false then
+		AmountOfSecondGood = OwnBuildingCostSystem.GetAmountOfGoodsInSettlement(OwnBuildingCostSystem.CurrentFestivalCosts[3], _PlayerID, false)
+	else
+		AmountOfSecondGood = Logic.GetAmountOnOutStockByGoodType(CurrentID, OwnBuildingCostSystem.CurrentFestivalCosts[3])
+	end
+	
 	if (AmountOfFirstGood < Round(Costs[2] * OwnBuildingCostSystem.CurrentFestivalCosts[2]) or AmountOfSecondGood < OwnBuildingCostSystem.CurrentFestivalCosts[4]) then
 		return false
 	else

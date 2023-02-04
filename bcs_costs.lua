@@ -66,7 +66,7 @@ function SetMyBuildingCosts()
 	OwnBuildingCostSystem.EditRoadCosts(3, Goods.G_Gems, 1.8) --Roadcosts/Straßenkosten (No production goods/Keine Verbrauchsgüter)
 	OwnBuildingCostSystem.EditTrailCosts(Goods.G_Herb, 1.5, Goods.G_Wood, 1) --Streetcosts/Wegkosten (No production goods/Keine Verbrauchsgüter)
 	
-	OwnBuildingCostSystem.EditFestivalCosts(1.5, Goods.G_Gems, 15) --Festivalcosts/Festkosten (No production goods/Keine Verbrauchsgüter)
+	OwnBuildingCostSystem.EditFestivalCosts(1.5, Goods.G_Sausage, 15) --Festivalcosts/Festkosten
 	--The first arguments here are multiplicators, that means that 1.5 f.e means 1.5 times the original cost
 	--Die ersten Argumente hier sind Multiplikatoren, das bedeutet das 1.5 heißt: 1.5 Mal die originalen Kosten
 	
