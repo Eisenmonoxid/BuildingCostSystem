@@ -813,7 +813,6 @@ OwnBuildingCostSystem.OverwriteTooltipHandling = function()
 		local IsFestivalCosts = false
 		
 		local Name = XGUIEng.GetWidgetNameByID(XGUIEng.GetCurrentWidgetID())
-		Message(Name)
 		if Name == "Street" and OwnBuildingCostSystem.RoadCosts ~= nil then
 			_Costs = {OwnBuildingCostSystem.RoadCosts[1], -1, OwnBuildingCostSystem.RoadCosts[3], -1}
 		elseif Name == "Trail" and OwnBuildingCostSystem.TrailCosts ~= nil then
