@@ -1,34 +1,34 @@
 ----------------------------------------------------------------------------------------------------------------------
 -----------------------------**BuildingCostSystem (BCS) Created By Eisenmonoxid**-------------------------------------
 ----------------------------------------------------------------------------------------------------------------------
-OwnBuildingCostSystem = {}
+BCS = {}
 
-OwnBuildingCostSystem.BuildingCosts = {} -- Contains all new costs
-OwnBuildingCostSystem.BuildingIDTable = {} -- Contains Building IDs and the corresponding costs
+BCS.BuildingCosts = {} -- Contains all new costs
+BCS.BuildingIDTable = {} -- Contains Building IDs and the corresponding costs
 
-OwnBuildingCostSystem.RoadMultiplier = {}
-OwnBuildingCostSystem.RoadMultiplier.First = 1
-OwnBuildingCostSystem.RoadMultiplier.Second = 1
-OwnBuildingCostSystem.RoadMultiplier.CurrentActualCost = 1
+BCS.RoadMultiplier = {}
+BCS.RoadMultiplier.First = 1
+BCS.RoadMultiplier.Second = 1
+BCS.RoadMultiplier.CurrentActualCost = 1
 
-OwnBuildingCostSystem.StreetMultiplier = {}
-OwnBuildingCostSystem.StreetMultiplier.First = 1
-OwnBuildingCostSystem.StreetMultiplier.Second = 1
-OwnBuildingCostSystem.StreetMultiplier.CurrentX = 1
-OwnBuildingCostSystem.StreetMultiplier.CurrentY = 1
+BCS.StreetMultiplier = {}
+BCS.StreetMultiplier.First = 1
+BCS.StreetMultiplier.Second = 1
+BCS.StreetMultiplier.CurrentX = 1
+BCS.StreetMultiplier.CurrentY = 1
 
-OwnBuildingCostSystem.RoadCosts = nil
-OwnBuildingCostSystem.TrailCosts = nil
-OwnBuildingCostSystem.PalisadeCosts = nil
-OwnBuildingCostSystem.WallCosts = nil
+BCS.RoadCosts = nil
+BCS.TrailCosts = nil
+BCS.PalisadeCosts = nil
+BCS.WallCosts = nil
 
-OwnBuildingCostSystem.IsCurrentBuildingInCostTable = false
-OwnBuildingCostSystem.CurrentExpectedBuildingType = nil
-OwnBuildingCostSystem.CurrentKnockDownFactor = 0.5 -- Half the new good cost is refunded at knock down
-OwnBuildingCostSystem.CurrentOriginalGoodKnockDownFactor = 0.2
-OwnBuildingCostSystem.IsInWallOrPalisadeContinueState = false
-OwnBuildingCostSystem.MarketplaceGoodsCount = false
-OwnBuildingCostSystem.RefundCityGoods = true
+BCS.IsCurrentBuildingInCostTable = false
+BCS.CurrentExpectedBuildingType = nil
+BCS.CurrentKnockDownFactor = 0.5 -- Half the new good cost is refunded at knock down
+BCS.CurrentOriginalGoodKnockDownFactor = 0.2
+BCS.IsInWallOrPalisadeContinueState = false
+BCS.MarketplaceGoodsCount = false
+BCS.RefundCityGoods = true
 
 StartTurretX = 1 -- Variables from the Original Lua Game Script
 StartTurretY = 1
@@ -36,115 +36,115 @@ StartTurretY = 1
 EndTurretX = 1
 EndTurretY = 1
 
-OwnBuildingCostSystem.CurrentFestivalCosts = nil
-OwnBuildingCostSystem.HuntableAnimals = false
-OwnBuildingCostSystem.HunterButtonID = nil
+BCS.CurrentFestivalCosts = nil
+BCS.HuntableAnimals = false
+BCS.HunterButtonID = nil
 
-OwnBuildingCostSystem.OverlayWidget = "/EndScreen"
-OwnBuildingCostSystem.OverlayIsCurrentlyShown = false
-OwnBuildingCostSystem.EnsuredQuestSystemBehaviorCompatibility = false
-OwnBuildingCostSystem.CurrentBCSVersion = "3.5 - 04.02.2023 05:31"
+BCS.OverlayWidget = "/EndScreen"
+BCS.OverlayIsCurrentlyShown = false
+BCS.EnsuredQuestSystemBehaviorCompatibility = false
+BCS.CurrentBCSVersion = "3.5 - 04.02.2023 05:31"
 
 ----------------------------------------------------------------------------------------------------------------------
 --These functions are exported to Userspace---------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------
 
-OwnBuildingCostSystem.EditBuildingCosts = function(_upgradeCategory, _originalCostAmount, _newGood, _newGoodAmount)
+BCS.EditBuildingCosts = function(_upgradeCategory, _originalCostAmount, _newGood, _newGoodAmount)
 	if _originalCostAmount == nil then
-		OwnBuildingCostSystem.UpdateCostsInCostTable(_upgradeCategory, nil)
+		BCS.UpdateCostsInCostTable(_upgradeCategory, nil)
 		return;
 	end
 	
 	--Check for Unloaded Script
-	assert(type(OwnBuildingCostSystem.GetEntityTypeFullCost) == "function")
+	assert(type(BCS.GetEntityTypeFullCost) == "function")
 	
 	--Check for Invalid GoodAmount
 	assert(_newGoodAmount >= 1)
 	local AmountOfTypes, FirstBuildingType = Logic.GetBuildingTypesInUpgradeCategory(_upgradeCategory)
-	local Costs = {OwnBuildingCostSystem.GetEntityTypeFullCost(FirstBuildingType)}
+	local Costs = {BCS.GetEntityTypeFullCost(FirstBuildingType)}
 	assert(_originalCostAmount >= Costs[2])
 	
 	local CurrentBuildingCost = {_upgradeCategory, _originalCostAmount, _newGood, _newGoodAmount}
-	local CostTable = OwnBuildingCostSystem.GetCostByCostTable(_upgradeCategory);
+	local CostTable = BCS.GetCostByCostTable(_upgradeCategory);
 	if (CostTable == nil) then
-		table.insert(OwnBuildingCostSystem.BuildingCosts, CurrentBuildingCost)
+		table.insert(BCS.BuildingCosts, CurrentBuildingCost)
 	else
-		OwnBuildingCostSystem.UpdateCostsInCostTable(_upgradeCategory, CurrentBuildingCost)
+		BCS.UpdateCostsInCostTable(_upgradeCategory, CurrentBuildingCost)
 	end
 end
 
-OwnBuildingCostSystem.EditRoadCosts = function(_originalCostFactor, _newGood, _newGoodFactor)
+BCS.EditRoadCosts = function(_originalCostFactor, _newGood, _newGoodFactor)
 	if _originalCostFactor == nil then
-		OwnBuildingCostSystem.RoadCosts = nil
+		BCS.RoadCosts = nil
 		return;
 	end
 	assert(_originalCostFactor >= 3)
-	OwnBuildingCostSystem.RoadCosts = {Goods.G_Stone, _originalCostFactor, _newGood, _newGoodFactor}
+	BCS.RoadCosts = {Goods.G_Stone, _originalCostFactor, _newGood, _newGoodFactor}
 end
 
-OwnBuildingCostSystem.EditWallCosts = function(_originalCostFactor, _newGood, _newGoodFactor)
+BCS.EditWallCosts = function(_originalCostFactor, _newGood, _newGoodFactor)
 	if _originalCostFactor == nil then
-		OwnBuildingCostSystem.WallCosts = nil
+		BCS.WallCosts = nil
 		return;
 	end
 	assert(_originalCostFactor >= 3)
-	OwnBuildingCostSystem.WallCosts = {Goods.G_Stone, _originalCostFactor, _newGood, _newGoodFactor}
+	BCS.WallCosts = {Goods.G_Stone, _originalCostFactor, _newGood, _newGoodFactor}
 end
 
-OwnBuildingCostSystem.EditPalisadeCosts = function(_originalCostFactor, _newGood, _newGoodFactor)
+BCS.EditPalisadeCosts = function(_originalCostFactor, _newGood, _newGoodFactor)
 	if _originalCostFactor == nil then
-		OwnBuildingCostSystem.PalisadeCosts = nil
+		BCS.PalisadeCosts = nil
 		return;
 	end
 	assert(_originalCostFactor >= 3)
-	OwnBuildingCostSystem.PalisadeCosts = {Goods.G_Wood, _originalCostFactor, _newGood, _newGoodFactor}
+	BCS.PalisadeCosts = {Goods.G_Wood, _originalCostFactor, _newGood, _newGoodFactor}
 end
 
-OwnBuildingCostSystem.EditTrailCosts = function(_firstGood, _originalCostFactor, _secondGood, _newGoodFactor)
+BCS.EditTrailCosts = function(_firstGood, _originalCostFactor, _secondGood, _newGoodFactor)
 	if _originalCostFactor == nil then
-		OwnBuildingCostSystem.TrailCosts = nil
+		BCS.TrailCosts = nil
 		return;
 	end
-	OwnBuildingCostSystem.TrailCosts = {_firstGood, _originalCostFactor, _secondGood, _newGoodFactor}
+	BCS.TrailCosts = {_firstGood, _originalCostFactor, _secondGood, _newGoodFactor}
 end
 
-OwnBuildingCostSystem.SetKnockDownFactor = function(_factorOriginalGood, _factorNewGood) --0.5 is half of the cost
+BCS.SetKnockDownFactor = function(_factorOriginalGood, _factorNewGood) --0.5 is half of the cost
 	assert(_factorOriginalGood < 1 and _factorNewGood < 1)
-	OwnBuildingCostSystem.CurrentKnockDownFactor = _factorNewGood
-	OwnBuildingCostSystem.CurrentOriginalGoodKnockDownFactor = _factorOriginalGood
+	BCS.CurrentKnockDownFactor = _factorNewGood
+	BCS.CurrentOriginalGoodKnockDownFactor = _factorOriginalGood
 end
 
-OwnBuildingCostSystem.EditFestivalCosts = function(_originalCostFactor, _secondGood, _newGoodFactor)
+BCS.EditFestivalCosts = function(_originalCostFactor, _secondGood, _newGoodFactor)
 	if _originalCostFactor == nil then
-		OwnBuildingCostSystem.CurrentFestivalCosts = nil
+		BCS.CurrentFestivalCosts = nil
 		return;
 	end
 	assert(_originalCostFactor > 1)
-	OwnBuildingCostSystem.CurrentFestivalCosts = {Goods.G_Gold, _originalCostFactor, _secondGood, _newGoodFactor}
+	BCS.CurrentFestivalCosts = {Goods.G_Gold, _originalCostFactor, _secondGood, _newGoodFactor}
 end
 
-OwnBuildingCostSystem.ActivateHuntableAnimals = function(_flag)
-	OwnBuildingCostSystem.HuntableAnimals = _flag
+BCS.ActivateHuntableAnimals = function(_flag)
+	BCS.HuntableAnimals = _flag
 end
 
-OwnBuildingCostSystem.SetRefundCityGoods = function(_flag)
-	OwnBuildingCostSystem.RefundCityGoods = _flag
+BCS.SetRefundCityGoods = function(_flag)
+	BCS.RefundCityGoods = _flag
 end
 
-OwnBuildingCostSystem.SetCountGoodsOnMarketplace = function(_flag)
-	OwnBuildingCostSystem.MarketplaceGoodsCount = _flag
+BCS.SetCountGoodsOnMarketplace = function(_flag)
+	BCS.MarketplaceGoodsCount = _flag
 end
 
 ----------------------------------------------------------------------------------------------------------------------
 --These functions are used internally and should not be called by the User--------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------
 
-OwnBuildingCostSystem.GetCostByCostTable = function(_buildingType)
+BCS.GetCostByCostTable = function(_buildingType)
 	if _buildingType == nil or _buildingType == 0 then
 		return nil;
 	end
 
-	for Type, CurrentCostTable in pairs(OwnBuildingCostSystem.BuildingCosts) do 
+	for Type, CurrentCostTable in pairs(BCS.BuildingCosts) do 
 		if (CurrentCostTable[1] == _buildingType) then
 			return CurrentCostTable;
 		end
@@ -153,29 +153,29 @@ OwnBuildingCostSystem.GetCostByCostTable = function(_buildingType)
 	return nil
 end
 
-OwnBuildingCostSystem.UpdateCostsInCostTable = function(_buildingType, _newCostTable)
+BCS.UpdateCostsInCostTable = function(_buildingType, _newCostTable)
 	if _buildingType == nil or _buildingType == 0 then
 		return nil;
 	end
 	
-	for Type, CurrentCostTable in pairs(OwnBuildingCostSystem.BuildingCosts) do 
+	for Type, CurrentCostTable in pairs(BCS.BuildingCosts) do 
 		if (CurrentCostTable[1] == _buildingType) then
 			if _newCostTable == nil then
-				OwnBuildingCostSystem.BuildingCosts[Type] = nil
+				BCS.BuildingCosts[Type] = nil
 			else
-				OwnBuildingCostSystem.BuildingCosts[Type] = {_newCostTable[1], _newCostTable[2], _newCostTable[3], _newCostTable[4]}
+				BCS.BuildingCosts[Type] = {_newCostTable[1], _newCostTable[2], _newCostTable[3], _newCostTable[4]}
 			end
 			break;
 		end
 	end
 end
 
-OwnBuildingCostSystem.GetCostByBuildingIDTable = function(_EntityID)
+BCS.GetCostByBuildingIDTable = function(_EntityID)
 	if _EntityID == nil or _EntityID == 0 then
 		return nil;
 	end
 
-	for Type, CurrentCostTable in pairs(OwnBuildingCostSystem.BuildingIDTable) do 
+	for Type, CurrentCostTable in pairs(BCS.BuildingIDTable) do 
 		if (CurrentCostTable[1] == _EntityID) then
 			return CurrentCostTable, Type;
 		end
@@ -184,21 +184,21 @@ OwnBuildingCostSystem.GetCostByBuildingIDTable = function(_EntityID)
 	return nil
 end
 
-OwnBuildingCostSystem.AddBuildingToIDTable = function(_EntityID, _upgradeCategory)
+BCS.AddBuildingToIDTable = function(_EntityID, _upgradeCategory)
 	local AmountOfTypes, FirstBuildingType = Logic.GetBuildingTypesInUpgradeCategory(_upgradeCategory)
 	local FGood, FAmount, SGood, SAmount = Logic.GetEntityTypeFullCost(FirstBuildingType)
-	table.insert(OwnBuildingCostSystem.BuildingIDTable, {_EntityID, FGood, FAmount, SGood, SAmount})
+	table.insert(BCS.BuildingIDTable, {_EntityID, FGood, FAmount, SGood, SAmount})
 end
 
 ----------------------------------------------------------------------------------------------------------------------
 --These functions handle the Ingame Resource Management---------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------
 
-OwnBuildingCostSystem.RemoveCostsFromOutStock = function(_buildingType)
+BCS.RemoveCostsFromOutStock = function(_buildingType)
 	local PlayerID = GUI.GetPlayerID()
 	local AmountOfTypes, FirstBuildingType = Logic.GetBuildingTypesInUpgradeCategory(_buildingType)
 	local FGood, FAmount, SGood, SAmount = Logic.GetEntityTypeFullCost(FirstBuildingType)
-	local OrigFGood, OrigFAmount, OrigSGood, OrigSAmount = OwnBuildingCostSystem.GetEntityTypeFullCost(FirstBuildingType)
+	local OrigFGood, OrigFAmount, OrigSGood, OrigSAmount = BCS.GetEntityTypeFullCost(FirstBuildingType)
 	
 	if OrigSAmount == nil then OrigSAmount = 0 end
 	
@@ -206,9 +206,9 @@ OwnBuildingCostSystem.RemoveCostsFromOutStock = function(_buildingType)
 	local SAmountToRemove = (SAmount - OrigSAmount)
 	local FGoodCurrentAmount, SGoodCurrentAmount
 
-	local CurrentID = OwnBuildingCostSystem.GetEntityIDToAddToOutStock(FGood)
+	local CurrentID = BCS.GetEntityIDToAddToOutStock(FGood)
 	if CurrentID == false then
-		OwnBuildingCostSystem.RemoveCostsFromOutStockCityGoods(FGood, FAmountToRemove, PlayerID, OwnBuildingCostSystem.MarketplaceGoodsCount)
+		BCS.RemoveCostsFromOutStockCityGoods(FGood, FAmountToRemove, PlayerID, BCS.MarketplaceGoodsCount)
 	else
 		FGoodCurrentAmount = Logic.GetAmountOnOutStockByGoodType(CurrentID, FGood)
 		if FGoodCurrentAmount < FAmountToRemove then
@@ -218,9 +218,9 @@ OwnBuildingCostSystem.RemoveCostsFromOutStock = function(_buildingType)
 		end
 	end
 	
-	CurrentID = OwnBuildingCostSystem.GetEntityIDToAddToOutStock(SGood)
+	CurrentID = BCS.GetEntityIDToAddToOutStock(SGood)
 	if CurrentID == false then
-		OwnBuildingCostSystem.RemoveCostsFromOutStockCityGoods(SGood, SAmountToRemove, PlayerID, OwnBuildingCostSystem.MarketplaceGoodsCount)
+		BCS.RemoveCostsFromOutStockCityGoods(SGood, SAmountToRemove, PlayerID, BCS.MarketplaceGoodsCount)
 	else
 		SGoodCurrentAmount = Logic.GetAmountOnOutStockByGoodType(CurrentID, SGood)
 		if SGoodCurrentAmount < SAmountToRemove then
@@ -231,8 +231,8 @@ OwnBuildingCostSystem.RemoveCostsFromOutStock = function(_buildingType)
 	end
 end
 
-OwnBuildingCostSystem.GetAmountOfGoodsInSettlement = function(_goodType, _playerID, _countMarketplace)
-	local CurrentID = OwnBuildingCostSystem.GetEntityIDToAddToOutStock(_goodType)
+BCS.GetAmountOfGoodsInSettlement = function(_goodType, _playerID, _countMarketplace)
+	local CurrentID = BCS.GetEntityIDToAddToOutStock(_goodType)
 	
 	if CurrentID ~= false then
 		return Logic.GetAmountOnOutStockByGoodType(CurrentID, _goodType)	
@@ -259,7 +259,7 @@ OwnBuildingCostSystem.GetAmountOfGoodsInSettlement = function(_goodType, _player
 	return Amount
 end
 
-OwnBuildingCostSystem.RemoveCostsFromOutStockCityGoods = function(_goodType, _goodAmount, _playerID, _countMarketplace)
+BCS.RemoveCostsFromOutStockCityGoods = function(_goodType, _goodAmount, _playerID, _countMarketplace)
 	local PlayerID = _playerID
 	local AmountToRemove = _goodAmount
 	local BuildingTypes, Buildings
@@ -296,64 +296,64 @@ OwnBuildingCostSystem.RemoveCostsFromOutStockCityGoods = function(_goodType, _go
 	end
 end
 
-OwnBuildingCostSystem.RemoveVariableCostsFromOutStock = function(_type)
+BCS.RemoveVariableCostsFromOutStock = function(_type)
 	-- 1 = Palisade, 2 = Wall, 3 = Trail, 4 = Road
 	local CostTable, OriginalCosts, CurrentID
 	local Costs = {0,0,0,0} -- Just to be sure
 	local PlayerID = GUI.GetPlayerID()
 	
 	if _type == 1 then -- Palisade
-		CostTable = OwnBuildingCostSystem.PalisadeCosts
+		CostTable = BCS.PalisadeCosts
 		Costs = {Logic.GetCostForWall(Entities.B_PalisadeSegment, Entities.B_PalisadeTurret, StartTurretX, StartTurretY, EndTurretX, EndTurretY)}
-		OriginalCosts = {OwnBuildingCostSystem.GetCostForWall(Entities.B_PalisadeSegment, Entities.B_PalisadeTurret, StartTurretX, StartTurretY, EndTurretX, EndTurretY)}
+		OriginalCosts = {BCS.GetCostForWall(Entities.B_PalisadeSegment, Entities.B_PalisadeTurret, StartTurretX, StartTurretY, EndTurretX, EndTurretY)}
 		OriginalCosts = OriginalCosts[2]
 	elseif _type == 2 then -- Wall
-		CostTable = OwnBuildingCostSystem.WallCosts
+		CostTable = BCS.WallCosts
 		Costs = {Logic.GetCostForWall(Entities.B_WallSegment_ME, Entities.B_WallTurret_ME, StartTurretX, StartTurretY, EndTurretX, EndTurretY)}
-		OriginalCosts = {OwnBuildingCostSystem.GetCostForWall(Entities.B_WallSegment_ME, Entities.B_WallTurret_ME, StartTurretX, StartTurretY, EndTurretX, EndTurretY)}
+		OriginalCosts = {BCS.GetCostForWall(Entities.B_WallSegment_ME, Entities.B_WallTurret_ME, StartTurretX, StartTurretY, EndTurretX, EndTurretY)}
 		OriginalCosts = OriginalCosts[2]
 	elseif _type == 3 then -- Trail
-		CostTable = OwnBuildingCostSystem.TrailCosts
-		Costs[2] = OwnBuildingCostSystem.StreetMultiplier.First
-		Costs[4] = OwnBuildingCostSystem.StreetMultiplier.Second
+		CostTable = BCS.TrailCosts
+		Costs[2] = BCS.StreetMultiplier.First
+		Costs[4] = BCS.StreetMultiplier.Second
 		OriginalCosts = 0 -- Trail has no costs in base game
 	elseif _type == 4 then -- Road
-		CostTable = OwnBuildingCostSystem.RoadCosts
-		Costs[2] = OwnBuildingCostSystem.RoadMultiplier.First
-		Costs[4] = OwnBuildingCostSystem.RoadMultiplier.Second
-		OriginalCosts = OwnBuildingCostSystem.RoadMultiplier.CurrentActualCost
+		CostTable = BCS.RoadCosts
+		Costs[2] = BCS.RoadMultiplier.First
+		Costs[4] = BCS.RoadMultiplier.Second
+		OriginalCosts = BCS.RoadMultiplier.CurrentActualCost
 	else
 		return; -- No valid type, so remove nothing
 	end
 	
-	CurrentID = OwnBuildingCostSystem.GetEntityIDToAddToOutStock(CostTable[1])
+	CurrentID = BCS.GetEntityIDToAddToOutStock(CostTable[1])
 	if CurrentID == false then
-		OwnBuildingCostSystem.RemoveCostsFromOutStockCityGoods(CostTable[1], Costs[2] - OriginalCosts, PlayerID, OwnBuildingCostSystem.MarketplaceGoodsCount)
+		BCS.RemoveCostsFromOutStockCityGoods(CostTable[1], Costs[2] - OriginalCosts, PlayerID, BCS.MarketplaceGoodsCount)
 	else
 		GUI.RemoveGoodFromStock(CurrentID, CostTable[1], Costs[2] - OriginalCosts)
 	end
 	
-	CurrentID = OwnBuildingCostSystem.GetEntityIDToAddToOutStock(CostTable[3])
+	CurrentID = BCS.GetEntityIDToAddToOutStock(CostTable[3])
 	if CurrentID == false then
-		OwnBuildingCostSystem.RemoveCostsFromOutStockCityGoods(CostTable[3], Costs[4], PlayerID, OwnBuildingCostSystem.MarketplaceGoodsCount)
+		BCS.RemoveCostsFromOutStockCityGoods(CostTable[3], Costs[4], PlayerID, BCS.MarketplaceGoodsCount)
 	else
 		GUI.RemoveGoodFromStock(CurrentID, CostTable[3], Costs[4])
 	end
 end
 
-OwnBuildingCostSystem.AreResourcesAvailable = function(_upgradeCategory, _FGoodAmount, _SGoodAmount)
+BCS.AreResourcesAvailable = function(_upgradeCategory, _FGoodAmount, _SGoodAmount)
 	local PlayerID = GUI.GetPlayerID()
 	local AmountOfTypes, FirstBuildingType, Costs
 	
 	if _FGoodAmount ~= nil and _SGoodAmount ~= nil then
 		if _upgradeCategory == 1 then --Road
-			Costs = OwnBuildingCostSystem.RoadCosts
+			Costs = BCS.RoadCosts
 		elseif _upgradeCategory == 2 then--Wall
-			Costs = OwnBuildingCostSystem.WallCosts
+			Costs = BCS.WallCosts
 		elseif _upgradeCategory == 3 then --Palisade
-			Costs = OwnBuildingCostSystem.PalisadeCosts
+			Costs = BCS.PalisadeCosts
 		else --Street/Trail
-			Costs = OwnBuildingCostSystem.TrailCosts
+			Costs = BCS.TrailCosts
 		end
 	else --Normal Buildings
 		AmountOfTypes, FirstBuildingType = Logic.GetBuildingTypesInUpgradeCategory(_upgradeCategory)
@@ -363,10 +363,10 @@ OwnBuildingCostSystem.AreResourcesAvailable = function(_upgradeCategory, _FGoodA
 	end
 	
 	local AmountOfFirstGood, AmountOfSecondGood
-	--AmountOfFirstGood = GetPlayerGoodsInSettlement(Costs[1], PlayerID, OwnBuildingCostSystem.MarketplaceGoodsCount)
-	--AmountOfSecondGood = GetPlayerGoodsInSettlement(Costs[3], PlayerID, OwnBuildingCostSystem.MarketplaceGoodsCount)
-	AmountOfFirstGood = OwnBuildingCostSystem.GetAmountOfGoodsInSettlement(Costs[1], PlayerID, OwnBuildingCostSystem.MarketplaceGoodsCount)
-	AmountOfSecondGood = OwnBuildingCostSystem.GetAmountOfGoodsInSettlement(Costs[3], PlayerID, OwnBuildingCostSystem.MarketplaceGoodsCount)
+	--AmountOfFirstGood = GetPlayerGoodsInSettlement(Costs[1], PlayerID, BCS.MarketplaceGoodsCount)
+	--AmountOfSecondGood = GetPlayerGoodsInSettlement(Costs[3], PlayerID, BCS.MarketplaceGoodsCount)
+	AmountOfFirstGood = BCS.GetAmountOfGoodsInSettlement(Costs[1], PlayerID, BCS.MarketplaceGoodsCount)
+	AmountOfSecondGood = BCS.GetAmountOfGoodsInSettlement(Costs[3], PlayerID, BCS.MarketplaceGoodsCount)
 	
 	if (AmountOfFirstGood < _FGoodAmount or AmountOfSecondGood < _SGoodAmount) then
 		return false
@@ -375,43 +375,43 @@ OwnBuildingCostSystem.AreResourcesAvailable = function(_upgradeCategory, _FGoodA
 	end
 end
 
-OwnBuildingCostSystem.RefundKnockDown = function(_entityID)
+BCS.RefundKnockDown = function(_entityID)
 	local PlayerID = GUI.GetPlayerID()
-	local CostTable, Type = OwnBuildingCostSystem.GetCostByBuildingIDTable(_entityID) --Normal Building or Wall/PalisadeGate
+	local CostTable, Type = BCS.GetCostByBuildingIDTable(_entityID) --Normal Building or Wall/PalisadeGate
 
 	if CostTable == nil then -- Building has no costs
 		return
 	end
 	
-	local IDFirstGood = OwnBuildingCostSystem.GetEntityIDToAddToOutStock(CostTable[2])
-	local IDSecondGood = OwnBuildingCostSystem.GetEntityIDToAddToOutStock(CostTable[4])
+	local IDFirstGood = BCS.GetEntityIDToAddToOutStock(CostTable[2])
+	local IDSecondGood = BCS.GetEntityIDToAddToOutStock(CostTable[4])
 
 	
 	if IDFirstGood == false then -- CityGood
-		if OwnBuildingCostSystem.RefundCityGoods == true then
-			OwnBuildingCostSystem.RefundKnockDownForCityGoods(CostTable[2], (Round(CostTable[3] * OwnBuildingCostSystem.CurrentOriginalGoodKnockDownFactor)))
+		if BCS.RefundCityGoods == true then
+			BCS.RefundKnockDownForCityGoods(CostTable[2], (Round(CostTable[3] * BCS.CurrentOriginalGoodKnockDownFactor)))
 		end
 	else
 		GUI.SendScriptCommand([[
-			Logic.AddGoodToStock(]]..IDFirstGood..[[, ]]..CostTable[2]..[[, ]]..(Round(CostTable[3] * OwnBuildingCostSystem.CurrentOriginalGoodKnockDownFactor))..[[)	
+			Logic.AddGoodToStock(]]..IDFirstGood..[[, ]]..CostTable[2]..[[, ]]..(Round(CostTable[3] * BCS.CurrentOriginalGoodKnockDownFactor))..[[)	
 		]])
 	end
 	if IDSecondGood == false then -- CityGood
-		if OwnBuildingCostSystem.RefundCityGoods == true then
-			OwnBuildingCostSystem.RefundKnockDownForCityGoods(CostTable[4], (Round(CostTable[5] * OwnBuildingCostSystem.CurrentKnockDownFactor)))
+		if BCS.RefundCityGoods == true then
+			BCS.RefundKnockDownForCityGoods(CostTable[4], (Round(CostTable[5] * BCS.CurrentKnockDownFactor)))
 		end
 	else
 		GUI.SendScriptCommand([[
-			Logic.AddGoodToStock(]]..IDSecondGood..[[, ]]..CostTable[4]..[[, ]]..(Round(CostTable[5] * OwnBuildingCostSystem.CurrentKnockDownFactor))..[[)	
+			Logic.AddGoodToStock(]]..IDSecondGood..[[, ]]..CostTable[4]..[[, ]]..(Round(CostTable[5] * BCS.CurrentKnockDownFactor))..[[)	
 		]])
 	end
 	
-	OwnBuildingCostSystem.BuildingIDTable[Type] = nil -- Delete the Entity ID from the table
+	BCS.BuildingIDTable[Type] = nil -- Delete the Entity ID from the table
 	
-	Framework.WriteToLog("BCS: KnockDown for Building "..tostring(_entityID).." done! Size of KnockDownList: "..tostring(#OwnBuildingCostSystem.BuildingIDTable))
+	Framework.WriteToLog("BCS: KnockDown for Building "..tostring(_entityID).." done! Size of KnockDownList: "..tostring(#BCS.BuildingIDTable))
 end
 
-OwnBuildingCostSystem.RefundKnockDownForCityGoods = function(_goodType, _goodAmount)
+BCS.RefundKnockDownForCityGoods = function(_goodType, _goodAmount)
 	local PlayerID = GUI.GetPlayerID()
 	local AmountToRemove = _goodAmount
 	local BuildingTypes, Buildings
@@ -444,7 +444,7 @@ OwnBuildingCostSystem.RefundKnockDownForCityGoods = function(_goodType, _goodAmo
 	Framework.WriteToLog("BCS: Refunded City Goods with type ".._goodType.." and amount ".._goodAmount..". Amount Lost: "..AmountToRemove)
 end
 
-OwnBuildingCostSystem.GetEntityIDToAddToOutStock = function(_goodType)
+BCS.GetEntityIDToAddToOutStock = function(_goodType)
 	local PlayerID = GUI.GetPlayerID()
 	
 	if _goodType == Goods.G_Gold then 
@@ -463,16 +463,16 @@ OwnBuildingCostSystem.GetEntityIDToAddToOutStock = function(_goodType)
 	return nil
 end
 
-OwnBuildingCostSystem.GetCurrentlyGlobalBuilding = function(_EntityID)
+BCS.GetCurrentlyGlobalBuilding = function(_EntityID)
 	Framework.WriteToLog("BCS: Job "..tostring(_EntityID).." Created!")
 	local WorkPlaceID = Logic.GetSettlersWorkBuilding(_EntityID)
 	if WorkPlaceID ~= 0 and WorkPlaceID ~= nil then
-		Framework.WriteToLog("BCS: Job "..tostring(_EntityID).." has BuildingType: " ..tostring(Logic.GetEntityType(WorkPlaceID)) .." - Expected: "..tostring(OwnBuildingCostSystem.CurrentExpectedBuildingType))
-		if OwnBuildingCostSystem.CurrentExpectedBuildingType ~= nil and Logic.GetEntityType(WorkPlaceID) == OwnBuildingCostSystem.CurrentExpectedBuildingType then
+		Framework.WriteToLog("BCS: Job "..tostring(_EntityID).." has BuildingType: " ..tostring(Logic.GetEntityType(WorkPlaceID)) .." - Expected: "..tostring(BCS.CurrentExpectedBuildingType))
+		if BCS.CurrentExpectedBuildingType ~= nil and Logic.GetEntityType(WorkPlaceID) == BCS.CurrentExpectedBuildingType then
 			local UpgradeCategory = Logic.GetUpgradeCategoryByBuildingType(Logic.GetEntityType(WorkPlaceID))
 			if UpgradeCategory == g_LastPlacedParam then
-				OwnBuildingCostSystem.AddBuildingToIDTable(WorkPlaceID, UpgradeCategory)
-				OwnBuildingCostSystem.CurrentExpectedBuildingType = nil
+				BCS.AddBuildingToIDTable(WorkPlaceID, UpgradeCategory)
+				BCS.CurrentExpectedBuildingType = nil
 				Framework.WriteToLog("BCS: Job " ..tostring(_EntityID) .. " finished! Reason: Building Added To ID Table: " ..tostring(WorkPlaceID))
 				return true
 			else
@@ -493,7 +493,7 @@ OwnBuildingCostSystem.GetCurrentlyGlobalBuilding = function(_EntityID)
 	elseif Logic.GetTaskHistoryEntry(_EntityID, 0) ~= 1 and Logic.GetTaskHistoryEntry(_EntityID, 0) ~= 9 then
 		Framework.WriteToLog("BCS: Job " ..tostring(_EntityID) .. " finished! Reason: TaskHistoryEntry was not 1 or 9 (Just Spawned/BuildingPhase)")
 		return true
-	elseif OwnBuildingCostSystem.CurrentExpectedBuildingType == nil then
+	elseif BCS.CurrentExpectedBuildingType == nil then
 		Framework.WriteToLog("BCS: Job " ..tostring(_EntityID) .. " finished! Reason: CurrentExpectedBuildingType was nil!")
 		return true
 	end
@@ -503,147 +503,147 @@ end
 --Hacking the game functions here-------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------
 
-OwnBuildingCostSystem.HasCurrentBuildingOwnBuildingCosts = function(_BuildingType)
-	local CostTable = OwnBuildingCostSystem.GetCostByCostTable(_BuildingType)
+BCS.HasCurrentBuildingOwnBuildingCosts = function(_BuildingType)
+	local CostTable = BCS.GetCostByCostTable(_BuildingType)
 	if (CostTable == nil) then
-		OwnBuildingCostSystem.SetAwaitingVariable(false)
-		OwnBuildingCostSystem.CurrentExpectedBuildingType = nil
+		BCS.SetAwaitingVariable(false)
+		BCS.CurrentExpectedBuildingType = nil
 	else
 		local AmountOfTypes, FirstBuildingType = Logic.GetBuildingTypesInUpgradeCategory(_BuildingType)
-		OwnBuildingCostSystem.CurrentExpectedBuildingType = FirstBuildingType
-		OwnBuildingCostSystem.SetAwaitingVariable(true)
+		BCS.CurrentExpectedBuildingType = FirstBuildingType
+		BCS.SetAwaitingVariable(true)
 		Framework.WriteToLog("BCS: Building Custom with Type: "..tostring(FirstBuildingType))
 	end
 end
-OwnBuildingCostSystem.SetAwaitingVariable = function(_isAwaiting)
-	OwnBuildingCostSystem.IsCurrentBuildingInCostTable = _isAwaiting
+BCS.SetAwaitingVariable = function(_isAwaiting)
+	BCS.IsCurrentBuildingInCostTable = _isAwaiting
 end
-OwnBuildingCostSystem.GetAwaitingVariable = function()
-	return OwnBuildingCostSystem.IsCurrentBuildingInCostTable
+BCS.GetAwaitingVariable = function()
+	return BCS.IsCurrentBuildingInCostTable
 end
 
-OwnBuildingCostSystem.OverwriteAfterPlacement = function()
-	if OwnBuildingCostSystem.GameCallback_GUI_AfterBuildingPlacement == nil then
-		OwnBuildingCostSystem.GameCallback_GUI_AfterBuildingPlacement = GameCallback_GUI_AfterBuildingPlacement;
+BCS.OverwriteAfterPlacement = function()
+	if BCS.GameCallback_GUI_AfterBuildingPlacement == nil then
+		BCS.GameCallback_GUI_AfterBuildingPlacement = GameCallback_GUI_AfterBuildingPlacement;
 	end
     GameCallback_GUI_AfterBuildingPlacement = function()
-		if (OwnBuildingCostSystem.GetAwaitingVariable() == true) then
-			OwnBuildingCostSystem.RemoveCostsFromOutStock(g_LastPlacedParam)
-			OwnBuildingCostSystem.SetAwaitingVariable(false)
+		if (BCS.GetAwaitingVariable() == true) then
+			BCS.RemoveCostsFromOutStock(g_LastPlacedParam)
+			BCS.SetAwaitingVariable(false)
 		end
-        OwnBuildingCostSystem.GameCallback_GUI_AfterBuildingPlacement();
+        BCS.GameCallback_GUI_AfterBuildingPlacement();
     end
 	
-	if OwnBuildingCostSystem.GameCallback_GUI_AfterWallGatePlacement == nil then
-		OwnBuildingCostSystem.GameCallback_GUI_AfterWallGatePlacement = GameCallback_GUI_AfterWallGatePlacement;
+	if BCS.GameCallback_GUI_AfterWallGatePlacement == nil then
+		BCS.GameCallback_GUI_AfterWallGatePlacement = GameCallback_GUI_AfterWallGatePlacement;
 	end
     GameCallback_GUI_AfterWallGatePlacement = function()
-		if (OwnBuildingCostSystem.GetAwaitingVariable() == true) then
-			OwnBuildingCostSystem.RemoveCostsFromOutStock(g_LastPlacedParam);
-			OwnBuildingCostSystem.SetAwaitingVariable(false)
+		if (BCS.GetAwaitingVariable() == true) then
+			BCS.RemoveCostsFromOutStock(g_LastPlacedParam);
+			BCS.SetAwaitingVariable(false)
 		end
-        OwnBuildingCostSystem.GameCallback_GUI_AfterWallGatePlacement();
+        BCS.GameCallback_GUI_AfterWallGatePlacement();
     end
 	
-	if OwnBuildingCostSystem.GameCallback_GUI_AfterRoadPlacement == nil then
-		OwnBuildingCostSystem.GameCallback_GUI_AfterRoadPlacement = GameCallback_GUI_AfterRoadPlacement;
+	if BCS.GameCallback_GUI_AfterRoadPlacement == nil then
+		BCS.GameCallback_GUI_AfterRoadPlacement = GameCallback_GUI_AfterRoadPlacement;
 	end
     GameCallback_GUI_AfterRoadPlacement = function()
 		if g_LastPlacedParam == false then --Road
-			if (OwnBuildingCostSystem.RoadCosts ~= nil) then
-				OwnBuildingCostSystem.RemoveVariableCostsFromOutStock(4)
+			if (BCS.RoadCosts ~= nil) then
+				BCS.RemoveVariableCostsFromOutStock(4)
 			end
 		else --Trail
-			if (OwnBuildingCostSystem.TrailCosts ~= nil) then
-				OwnBuildingCostSystem.RemoveVariableCostsFromOutStock(3)
+			if (BCS.TrailCosts ~= nil) then
+				BCS.RemoveVariableCostsFromOutStock(3)
 			end
 		end
 		
-		OwnBuildingCostSystem.ResetTrailAndRoadCosts()
-        OwnBuildingCostSystem.GameCallback_GUI_AfterRoadPlacement();
+		BCS.ResetTrailAndRoadCosts()
+        BCS.GameCallback_GUI_AfterRoadPlacement();
     end
 	
-	if OwnBuildingCostSystem.GameCallback_GUI_AfterWallPlacement == nil then
-		OwnBuildingCostSystem.GameCallback_GUI_AfterWallPlacement = GameCallback_GUI_AfterWallPlacement;
+	if BCS.GameCallback_GUI_AfterWallPlacement == nil then
+		BCS.GameCallback_GUI_AfterWallPlacement = GameCallback_GUI_AfterWallPlacement;
 	end
     GameCallback_GUI_AfterWallPlacement = function()
 		if g_LastPlacedParam == UpgradeCategories.PalisadeSegment then --Palisade
-			if (OwnBuildingCostSystem.PalisadeCosts ~= nil) then
-				OwnBuildingCostSystem.RemoveVariableCostsFromOutStock(1)
+			if (BCS.PalisadeCosts ~= nil) then
+				BCS.RemoveVariableCostsFromOutStock(1)
 			end
 		elseif g_LastPlacedParam == GetUpgradeCategoryForClimatezone("WallSegment") then --Wall
-			if (OwnBuildingCostSystem.WallCosts ~= nil) then
-				OwnBuildingCostSystem.RemoveVariableCostsFromOutStock(2)
+			if (BCS.WallCosts ~= nil) then
+				BCS.RemoveVariableCostsFromOutStock(2)
 			end
 		end
 		
-		OwnBuildingCostSystem.ResetWallTurretPositions()
-		OwnBuildingCostSystem.IsInWallOrPalisadeContinueState = false
-        OwnBuildingCostSystem.GameCallback_GUI_AfterWallPlacement();
+		BCS.ResetWallTurretPositions()
+		BCS.IsInWallOrPalisadeContinueState = false
+        BCS.GameCallback_GUI_AfterWallPlacement();
     end
 end
 
-OwnBuildingCostSystem.OverwriteBuildClicked = function()
-	if OwnBuildingCostSystem.BuildClicked == nil then
-		OwnBuildingCostSystem.BuildClicked = GUI_Construction.BuildClicked;
+BCS.OverwriteBuildClicked = function()
+	if BCS.BuildClicked == nil then
+		BCS.BuildClicked = GUI_Construction.BuildClicked;
 	end	
 	GUI_Construction.BuildClicked = function(_BuildingType)
 		GUI.CancelState()
-		OwnBuildingCostSystem.HasCurrentBuildingOwnBuildingCosts(_BuildingType)
+		BCS.HasCurrentBuildingOwnBuildingCosts(_BuildingType)
 		g_LastPlacedParam = _BuildingType
-		OwnBuildingCostSystem.IsInWallOrPalisadeContinueState = false
-		OwnBuildingCostSystem.BuildClicked(_BuildingType)
+		BCS.IsInWallOrPalisadeContinueState = false
+		BCS.BuildClicked(_BuildingType)
 	end
 	
-	if OwnBuildingCostSystem.BuildWallClicked == nil then
-		OwnBuildingCostSystem.BuildWallClicked = GUI_Construction.BuildWallClicked;
+	if BCS.BuildWallClicked == nil then
+		BCS.BuildWallClicked = GUI_Construction.BuildWallClicked;
 	end	
 	GUI_Construction.BuildWallClicked = function(_BuildingType)
 	    if _BuildingType == nil then
 			_BuildingType = GetUpgradeCategoryForClimatezone("WallSegment")
 		end
 		GUI.CancelState()
-		OwnBuildingCostSystem.ResetWallTurretPositions()
+		BCS.ResetWallTurretPositions()
 		g_LastPlacedParam = _BuildingType
-		OwnBuildingCostSystem.IsInWallOrPalisadeContinueState = false
-		OwnBuildingCostSystem.BuildWallClicked(_BuildingType)
+		BCS.IsInWallOrPalisadeContinueState = false
+		BCS.BuildWallClicked(_BuildingType)
 	end
 	
-	if OwnBuildingCostSystem.BuildWallGateClicked == nil then
-		OwnBuildingCostSystem.BuildWallGateClicked = GUI_Construction.BuildWallGateClicked;
+	if BCS.BuildWallGateClicked == nil then
+		BCS.BuildWallGateClicked = GUI_Construction.BuildWallGateClicked;
 	end	
 	GUI_Construction.BuildWallGateClicked = function(_BuildingType)
 	    if _BuildingType == nil then
 			_BuildingType = GetUpgradeCategoryForClimatezone("WallGate")
 		end
 		GUI.CancelState()
-		OwnBuildingCostSystem.HasCurrentBuildingOwnBuildingCosts(_BuildingType)
+		BCS.HasCurrentBuildingOwnBuildingCosts(_BuildingType)
 		g_LastPlacedParam = _BuildingType
-		OwnBuildingCostSystem.IsInWallOrPalisadeContinueState = false
-		OwnBuildingCostSystem.BuildWallGateClicked(_BuildingType)
+		BCS.IsInWallOrPalisadeContinueState = false
+		BCS.BuildWallGateClicked(_BuildingType)
 	end
 	
-	if OwnBuildingCostSystem.BuildStreetClicked == nil then
-		OwnBuildingCostSystem.BuildStreetClicked = GUI_Construction.BuildStreetClicked;
+	if BCS.BuildStreetClicked == nil then
+		BCS.BuildStreetClicked = GUI_Construction.BuildStreetClicked;
 	end	
 	GUI_Construction.BuildStreetClicked = function(_IsTrail)
-		OwnBuildingCostSystem.ResetTrailAndRoadCosts()
+		BCS.ResetTrailAndRoadCosts()
 	    if _IsTrail == nil then
 			_IsTrail = false
 		end
 		GUI.CancelState()
-		OwnBuildingCostSystem.SetAwaitingVariable(false)
+		BCS.SetAwaitingVariable(false)
 		g_LastPlacedParam = _IsTrail
-		OwnBuildingCostSystem.IsInWallOrPalisadeContinueState = false
-		OwnBuildingCostSystem.BuildStreetClicked(_IsTrail)
+		BCS.IsInWallOrPalisadeContinueState = false
+		BCS.BuildStreetClicked(_IsTrail)
 	end
 	
-	if OwnBuildingCostSystem.ContinueWallClicked == nil then
-		OwnBuildingCostSystem.ContinueWallClicked = GUI_BuildingButtons.ContinueWallClicked;
+	if BCS.ContinueWallClicked == nil then
+		BCS.ContinueWallClicked = GUI_BuildingButtons.ContinueWallClicked;
 	end	
 	GUI_BuildingButtons.ContinueWallClicked = function()
 		GUI.CancelState()
-		OwnBuildingCostSystem.ResetWallTurretPositions()
+		BCS.ResetWallTurretPositions()
 		
 		local TurretID = GUI.GetSelectedEntity()
 		local TurretType = Logic.GetEntityType(TurretID)
@@ -655,47 +655,47 @@ OwnBuildingCostSystem.OverwriteBuildClicked = function()
 				UpgradeCategory = GetUpgradeCategoryForClimatezone("WallSegment")
 		end
 		g_LastPlacedParam = UpgradeCategory
-		OwnBuildingCostSystem.IsInWallOrPalisadeContinueState = true
+		BCS.IsInWallOrPalisadeContinueState = true
 		
-		OwnBuildingCostSystem.ContinueWallClicked()
+		BCS.ContinueWallClicked()
 	end
 end
-OwnBuildingCostSystem.OverwriteBuildAbort = function()
-	if OwnBuildingCostSystem.ConstructWallAbort == nil then
-		OwnBuildingCostSystem.ConstructWallAbort = GameCallBack_GUI_ConstructWallAbort;
+BCS.OverwriteBuildAbort = function()
+	if BCS.ConstructWallAbort == nil then
+		BCS.ConstructWallAbort = GameCallBack_GUI_ConstructWallAbort;
 	end	
 	GameCallBack_GUI_ConstructWallAbort = function()
-		OwnBuildingCostSystem.ResetWallTurretPositions()
-		OwnBuildingCostSystem.IsInWallOrPalisadeContinueState = false
-		OwnBuildingCostSystem.ConstructWallAbort()
+		BCS.ResetWallTurretPositions()
+		BCS.IsInWallOrPalisadeContinueState = false
+		BCS.ConstructWallAbort()
 	end
 	
-	if OwnBuildingCostSystem.ConstructRoadAbort == nil then
-		OwnBuildingCostSystem.ConstructRoadAbort = GameCallback_GUI_ConstructRoadAbort;
+	if BCS.ConstructRoadAbort == nil then
+		BCS.ConstructRoadAbort = GameCallback_GUI_ConstructRoadAbort;
 	end	
 	GameCallback_GUI_ConstructRoadAbort = function()
-		OwnBuildingCostSystem.ResetTrailAndRoadCosts()
-		OwnBuildingCostSystem.ConstructRoadAbort()
+		BCS.ResetTrailAndRoadCosts()
+		BCS.ConstructRoadAbort()
 	end
 end
 
-OwnBuildingCostSystem.OverwriteGetCostLogics = function()
+BCS.OverwriteGetCostLogics = function()
 
-	if OwnBuildingCostSystem.GetEntityTypeFullCost == nil then
-		OwnBuildingCostSystem.GetEntityTypeFullCost = Logic.GetEntityTypeFullCost;
+	if BCS.GetEntityTypeFullCost == nil then
+		BCS.GetEntityTypeFullCost = Logic.GetEntityTypeFullCost;
 	end	
 	Logic.GetEntityTypeFullCost = function(_buildingType)
-		local CostTable = OwnBuildingCostSystem.GetCostByCostTable(Logic.GetUpgradeCategoryByBuildingType(_buildingType));
+		local CostTable = BCS.GetCostByCostTable(Logic.GetUpgradeCategoryByBuildingType(_buildingType));
 		if (CostTable == nil) then
-			return OwnBuildingCostSystem.GetEntityTypeFullCost(_buildingType)
+			return BCS.GetEntityTypeFullCost(_buildingType)
 		else
-			local Costs = {OwnBuildingCostSystem.GetEntityTypeFullCost(_buildingType)}
+			local Costs = {BCS.GetEntityTypeFullCost(_buildingType)}
 			return Costs[1], CostTable[2], CostTable[3], CostTable[4]
 		end
 	end
 	
-	if OwnBuildingCostSystem.GetCostForWall == nil then
-		OwnBuildingCostSystem.GetCostForWall = Logic.GetCostForWall;
+	if BCS.GetCostForWall == nil then
+		BCS.GetCostForWall = Logic.GetCostForWall;
 	end	
 	Logic.GetCostForWall = function(_SegmentType, _TurretType, StartTurretX, StartTurretY, EndTurretX, EndTurretY)
 		--113 110 --Palisade Entities.B_PalisadeSegment, Entities.B_PalisadeTurret
@@ -703,35 +703,35 @@ OwnBuildingCostSystem.OverwriteGetCostLogics = function()
 		--Using Wall_ME since all Walls have the same costs anyway so no reason to differentiate between climate zones
 		
 		if _SegmentType == Entities.B_PalisadeSegment and _TurretType == Entities.B_PalisadeTurret then -- Palisade
-			if (OwnBuildingCostSystem.PalisadeCosts == nil) then
-				return OwnBuildingCostSystem.GetCostForWall(_SegmentType, _TurretType, StartTurretX, StartTurretY, EndTurretX, EndTurretY)
+			if (BCS.PalisadeCosts == nil) then
+				return BCS.GetCostForWall(_SegmentType, _TurretType, StartTurretX, StartTurretY, EndTurretX, EndTurretY)
 			else
-				local Distance = OwnBuildingCostSystem.CalculateVariableCosts(StartTurretX, StartTurretY, EndTurretX, EndTurretY)
-				return OwnBuildingCostSystem.PalisadeCosts[1], math.floor(Distance*OwnBuildingCostSystem.PalisadeCosts[2]), OwnBuildingCostSystem.PalisadeCosts[3], math.floor(Distance*OwnBuildingCostSystem.PalisadeCosts[4])
+				local Distance = BCS.CalculateVariableCosts(StartTurretX, StartTurretY, EndTurretX, EndTurretY)
+				return BCS.PalisadeCosts[1], math.floor(Distance*BCS.PalisadeCosts[2]), BCS.PalisadeCosts[3], math.floor(Distance*BCS.PalisadeCosts[4])
 			end	
 		else -- Wall
-			if (OwnBuildingCostSystem.WallCosts == nil) then
-				return OwnBuildingCostSystem.GetCostForWall(_SegmentType, _TurretType, StartTurretX, StartTurretY, EndTurretX, EndTurretY)
+			if (BCS.WallCosts == nil) then
+				return BCS.GetCostForWall(_SegmentType, _TurretType, StartTurretX, StartTurretY, EndTurretX, EndTurretY)
 			else
-				local Distance = OwnBuildingCostSystem.CalculateVariableCosts(StartTurretX, StartTurretY, EndTurretX, EndTurretY)
-				return OwnBuildingCostSystem.WallCosts[1], math.floor(Distance*OwnBuildingCostSystem.WallCosts[2]), OwnBuildingCostSystem.WallCosts[3], math.floor(Distance*OwnBuildingCostSystem.WallCosts[4])
+				local Distance = BCS.CalculateVariableCosts(StartTurretX, StartTurretY, EndTurretX, EndTurretY)
+				return BCS.WallCosts[1], math.floor(Distance*BCS.WallCosts[2]), BCS.WallCosts[3], math.floor(Distance*BCS.WallCosts[4])
 			end		
 		end
 	end
 end
 
-OwnBuildingCostSystem.OverwriteVariableCostBuildings = function()
-	if OwnBuildingCostSystem.GameCallBack_GUI_BuildRoadCostChanged == nil then
-		OwnBuildingCostSystem.GameCallBack_GUI_BuildRoadCostChanged = GameCallBack_GUI_BuildRoadCostChanged;
+BCS.OverwriteVariableCostBuildings = function()
+	if BCS.GameCallBack_GUI_BuildRoadCostChanged == nil then
+		BCS.GameCallBack_GUI_BuildRoadCostChanged = GameCallBack_GUI_BuildRoadCostChanged;
 	end	
     GameCallBack_GUI_BuildRoadCostChanged = function(_Length)
-		if OwnBuildingCostSystem.RoadCosts == nil then
-			OwnBuildingCostSystem.GameCallBack_GUI_BuildRoadCostChanged(_Length)
+		if BCS.RoadCosts == nil then
+			BCS.GameCallBack_GUI_BuildRoadCostChanged(_Length)
 		else
 			local Meters = _Length / 100
 			local MetersPerUnit = Logic.GetRoadMetersPerRoadUnit()
-			local AmountFirstGood = math.floor(OwnBuildingCostSystem.RoadCosts[2] * (Meters / MetersPerUnit))
-			local AmountSecondGood = math.floor(OwnBuildingCostSystem.RoadCosts[4] * (Meters / MetersPerUnit))
+			local AmountFirstGood = math.floor(BCS.RoadCosts[2] * (Meters / MetersPerUnit))
+			local AmountSecondGood = math.floor(BCS.RoadCosts[4] * (Meters / MetersPerUnit))
 
 			if AmountFirstGood == 0 then
 				AmountFirstGood = 1
@@ -740,11 +740,11 @@ OwnBuildingCostSystem.OverwriteVariableCostBuildings = function()
 				AmountSecondGood = 1
 			end
 			
-		    GUI_Tooltip.TooltipCostsOnly({Goods.G_Stone, AmountFirstGood, OwnBuildingCostSystem.RoadCosts[3], AmountSecondGood})
+		    GUI_Tooltip.TooltipCostsOnly({Goods.G_Stone, AmountFirstGood, BCS.RoadCosts[3], AmountSecondGood})
 			XGUIEng.ShowWidget("/InGame/Root/Normal/TooltipCostsOnly", 1)
 			
-			OwnBuildingCostSystem.RoadMultiplier.First = AmountFirstGood;
-			OwnBuildingCostSystem.RoadMultiplier.Second = AmountSecondGood;
+			BCS.RoadMultiplier.First = AmountFirstGood;
+			BCS.RoadMultiplier.Second = AmountSecondGood;
 
 			local Costs = {Logic.GetRoadCostPerRoadUnit()}
 			for i = 2, table.getn(Costs), 2 do
@@ -753,25 +753,25 @@ OwnBuildingCostSystem.OverwriteVariableCostBuildings = function()
 					Costs[i] = 1
 				end
 			end
-			OwnBuildingCostSystem.RoadMultiplier.CurrentActualCost = Costs[2]
+			BCS.RoadMultiplier.CurrentActualCost = Costs[2]
 		end
     end
 	
-	if OwnBuildingCostSystem.GameCallBack_GUI_ConstructWallSegmentCountChanged == nil then
-		OwnBuildingCostSystem.GameCallBack_GUI_ConstructWallSegmentCountChanged = GameCallBack_GUI_ConstructWallSegmentCountChanged;
+	if BCS.GameCallBack_GUI_ConstructWallSegmentCountChanged == nil then
+		BCS.GameCallBack_GUI_ConstructWallSegmentCountChanged = GameCallBack_GUI_ConstructWallSegmentCountChanged;
 	end	
 	GameCallBack_GUI_ConstructWallSegmentCountChanged = function(_SegmentType, _TurretType)
 		if _SegmentType == Entities.B_PalisadeSegment and _TurretType == Entities.B_PalisadeTurret then -- Palisade
-			if OwnBuildingCostSystem.PalisadeCosts == nil then
-				OwnBuildingCostSystem.GameCallBack_GUI_ConstructWallSegmentCountChanged(_SegmentType, _TurretType)
+			if BCS.PalisadeCosts == nil then
+				BCS.GameCallBack_GUI_ConstructWallSegmentCountChanged(_SegmentType, _TurretType)
 			else
 				local Costs = {Logic.GetCostForWall(_SegmentType, _TurretType, StartTurretX, StartTurretY, EndTurretX, EndTurretY)}
 				GUI_Tooltip.TooltipCostsOnly(Costs)
 				XGUIEng.ShowWidget("/InGame/Root/Normal/TooltipCostsOnly", 1)
 			end
 		else
-			if OwnBuildingCostSystem.WallCosts == nil then
-				OwnBuildingCostSystem.GameCallBack_GUI_ConstructWallSegmentCountChanged(_SegmentType, _TurretType)
+			if BCS.WallCosts == nil then
+				BCS.GameCallBack_GUI_ConstructWallSegmentCountChanged(_SegmentType, _TurretType)
 			else
 				local Costs = {Logic.GetCostForWall(_SegmentType, _TurretType, StartTurretX, StartTurretY, EndTurretX, EndTurretY)}
 				GUI_Tooltip.TooltipCostsOnly(Costs)
@@ -780,30 +780,30 @@ OwnBuildingCostSystem.OverwriteVariableCostBuildings = function()
 		end
 	end
 	
-	if OwnBuildingCostSystem.GameCallback_GUI_Street_Started == nil then
-		OwnBuildingCostSystem.GameCallback_GUI_Street_Started = GameCallback_GUI_Street_Started;
+	if BCS.GameCallback_GUI_Street_Started == nil then
+		BCS.GameCallback_GUI_Street_Started = GameCallback_GUI_Street_Started;
 	end	
 	GameCallback_GUI_Street_Started = function(_PlayerID, _X, _Y)
-		OwnBuildingCostSystem.GameCallback_GUI_Street_Started(_PlayerID, _X, _Y)
-		if OwnBuildingCostSystem.TrailCosts ~= nil and _PlayerID == 1 then
-			OwnBuildingCostSystem.StreetMultiplier.CurrentX = _X
-			OwnBuildingCostSystem.StreetMultiplier.CurrentY = _Y
+		BCS.GameCallback_GUI_Street_Started(_PlayerID, _X, _Y)
+		if BCS.TrailCosts ~= nil and _PlayerID == 1 then
+			BCS.StreetMultiplier.CurrentX = _X
+			BCS.StreetMultiplier.CurrentY = _Y
 		end
 	end
 	
-	if OwnBuildingCostSystem.GameCallback_Street_Placed_Local == nil then
-		OwnBuildingCostSystem.GameCallback_Street_Placed_Local = GameCallback_Street_Placed_Local;
+	if BCS.GameCallback_Street_Placed_Local == nil then
+		BCS.GameCallback_Street_Placed_Local = GameCallback_Street_Placed_Local;
 	end	
 	GameCallback_Street_Placed_Local = function(_PlayerID, _X, _Y)
-		OwnBuildingCostSystem.GameCallback_Street_Placed_Local(_PlayerID, _X, _Y)
-		if OwnBuildingCostSystem.TrailCosts ~= nil and _PlayerID == 1 then
-			OwnBuildingCostSystem.StreetMultiplier.CurrentX = _X
-			OwnBuildingCostSystem.StreetMultiplier.CurrentY = _Y
+		BCS.GameCallback_Street_Placed_Local(_PlayerID, _X, _Y)
+		if BCS.TrailCosts ~= nil and _PlayerID == 1 then
+			BCS.StreetMultiplier.CurrentX = _X
+			BCS.StreetMultiplier.CurrentY = _Y
 		end
 	end
 end
 
-OwnBuildingCostSystem.OverwriteTooltipHandling = function()
+BCS.OverwriteTooltipHandling = function()
 	function GUI_Tooltip.SetCosts(_TooltipCostsContainer, _Costs, _GoodsInSettlementBoolean)
 		local TooltipCostsContainerPath = XGUIEng.GetWidgetPathByID(_TooltipCostsContainer)
 		local Good1ContainerPath = TooltipCostsContainerPath .. "/1Good"
@@ -813,15 +813,15 @@ OwnBuildingCostSystem.OverwriteTooltipHandling = function()
 		local IsFestivalCosts = false
 		
 		local Name = XGUIEng.GetWidgetNameByID(XGUIEng.GetCurrentWidgetID())
-		if Name == "Street" and OwnBuildingCostSystem.RoadCosts ~= nil then
-			_Costs = {OwnBuildingCostSystem.RoadCosts[1], -1, OwnBuildingCostSystem.RoadCosts[3], -1}
-		elseif Name == "Trail" and OwnBuildingCostSystem.TrailCosts ~= nil then
-			_Costs = {OwnBuildingCostSystem.TrailCosts[1], -1, OwnBuildingCostSystem.TrailCosts[3], -1}	
-		elseif Name == "Palisade" and OwnBuildingCostSystem.PalisadeCosts ~= nil then
-			_Costs = {OwnBuildingCostSystem.PalisadeCosts[1], -1, OwnBuildingCostSystem.PalisadeCosts[3], -1}		
-		elseif Name == "Wall" and OwnBuildingCostSystem.WallCosts ~= nil then
-			_Costs = {OwnBuildingCostSystem.WallCosts[1], -1, OwnBuildingCostSystem.WallCosts[3], -1}	
-		elseif Name == "StartFestival" and OwnBuildingCostSystem.CurrentFestivalCosts ~= nil then
+		if Name == "Street" and BCS.RoadCosts ~= nil then
+			_Costs = {BCS.RoadCosts[1], -1, BCS.RoadCosts[3], -1}
+		elseif Name == "Trail" and BCS.TrailCosts ~= nil then
+			_Costs = {BCS.TrailCosts[1], -1, BCS.TrailCosts[3], -1}	
+		elseif Name == "Palisade" and BCS.PalisadeCosts ~= nil then
+			_Costs = {BCS.PalisadeCosts[1], -1, BCS.PalisadeCosts[3], -1}		
+		elseif Name == "Wall" and BCS.WallCosts ~= nil then
+			_Costs = {BCS.WallCosts[1], -1, BCS.WallCosts[3], -1}	
+		elseif Name == "StartFestival" and BCS.CurrentFestivalCosts ~= nil then
 			IsFestivalCosts = true
 		elseif Name == "PlaceField" then
 			local EntityType = Logic.GetEntityType(GUI.GetSelectedEntity())
@@ -836,12 +836,12 @@ OwnBuildingCostSystem.OverwriteTooltipHandling = function()
 			elseif EntityType == Entities.B_SheepFarm then
 				UpgradeCategory = UpgradeCategories.SheepPasture
 			end
-			local CostTable = OwnBuildingCostSystem.GetCostByCostTable(UpgradeCategory)
+			local CostTable = BCS.GetCostByCostTable(UpgradeCategory)
 			if (CostTable ~= nil) then
 				BCSBuildingInCostTable = true
 			end
 		else
-			local CostTable = OwnBuildingCostSystem.GetCostByCostTable(Logic.GetUpgradeCategoryByBuildingType(Entities[Name]))
+			local CostTable = BCS.GetCostByCostTable(Logic.GetUpgradeCategoryByBuildingType(Entities[Name]))
 			if (CostTable ~= nil) then
 				BCSBuildingInCostTable = true
 			end
@@ -892,12 +892,12 @@ OwnBuildingCostSystem.OverwriteTooltipHandling = function()
 				local PlayersGoodAmount, ID
 				
 				-- Changed
-				local ID = OwnBuildingCostSystem.GetEntityIDToAddToOutStock(CostsGoodType)
+				local ID = BCS.GetEntityIDToAddToOutStock(CostsGoodType)
 				if (ID == false and BCSBuildingInCostTable == true) then
 					--PlayersGoodAmount = GetPlayerGoodsInSettlement(CostsGoodType, PlayerID, true)
-					PlayersGoodAmount = OwnBuildingCostSystem.GetAmountOfGoodsInSettlement(CostsGoodType, PlayerID, OwnBuildingCostSystem.MarketplaceGoodsCount)
+					PlayersGoodAmount = BCS.GetAmountOfGoodsInSettlement(CostsGoodType, PlayerID, BCS.MarketplaceGoodsCount)
 				elseif IsFestivalCosts == true then
-					PlayersGoodAmount = OwnBuildingCostSystem.GetAmountOfGoodsInSettlement(CostsGoodType, PlayerID, false)
+					PlayersGoodAmount = BCS.GetAmountOfGoodsInSettlement(CostsGoodType, PlayerID, false)
 				elseif _GoodsInSettlementBoolean == true then
 					PlayersGoodAmount = GetPlayerGoodsInSettlement(CostsGoodType, PlayerID, true)
 				else 
@@ -947,117 +947,121 @@ OwnBuildingCostSystem.OverwriteTooltipHandling = function()
 	end
 end
 
-OwnBuildingCostSystem.InitializeOwnBuildingCostSystem = function()
+-- [[
+	-- > This here is the function that initializes the whole Building Cost System
+	-- > Has to be called before everything else
+-- ]]
+BCS.InitializeBuildingCostSystem = function()
 
-	OwnBuildingCostSystem.OverwriteAfterPlacement()
-	OwnBuildingCostSystem.OverwriteBuildClicked()
-	OwnBuildingCostSystem.OverwriteBuildAbort()
-	OwnBuildingCostSystem.OverwriteGetCostLogics()
-	OwnBuildingCostSystem.OverwriteVariableCostBuildings()
-	OwnBuildingCostSystem.OverwriteEndScreenCallback()
-	OwnBuildingCostSystem.FestivalCostsHandler()
-	OwnBuildingCostSystem.OverwriteTooltipHandling()
+	BCS.OverwriteAfterPlacement()
+	BCS.OverwriteBuildClicked()
+	BCS.OverwriteBuildAbort()
+	BCS.OverwriteGetCostLogics()
+	BCS.OverwriteVariableCostBuildings()
+	BCS.OverwriteEndScreenCallback()
+	BCS.FestivalCostsHandler()
+	BCS.OverwriteTooltipHandling()
 	
-	OwnBuildingCostSystem.OverwriteOptionalBugfixFunctions() --Not needed, just nice to have
-	OwnBuildingCostSystem.EnsureQuestSystemBehaviorCompatibility() --For QSB compatibility	
+	BCS.OverwriteOptionalBugfixFunctions() --Not needed, just nice to have
+	BCS.EnsureQuestSystemBehaviorCompatibility() --For QSB compatibility	
 
-	if OwnBuildingCostSystem.PlacementUpdate == nil then
-		OwnBuildingCostSystem.PlacementUpdate = GUI_Construction.PlacementUpdate;
+	if BCS.PlacementUpdate == nil then
+		BCS.PlacementUpdate = GUI_Construction.PlacementUpdate;
 	end	
 	GUI_Construction.PlacementUpdate = function()	
 		
 		if g_LastPlacedParam == false then --Road
-			if (OwnBuildingCostSystem.RoadCosts ~= nil) then
-				if not OwnBuildingCostSystem.AreResourcesAvailable(1, OwnBuildingCostSystem.RoadMultiplier.First, OwnBuildingCostSystem.RoadMultiplier.Second)
-				and (OwnBuildingCostSystem.StreetMultiplier.CurrentX ~= 1 and OwnBuildingCostSystem.StreetMultiplier.CurrentY ~= 1) then
-					OwnBuildingCostSystem.ShowOverlayWidget(true)
+			if (BCS.RoadCosts ~= nil) then
+				if not BCS.AreResourcesAvailable(1, BCS.RoadMultiplier.First, BCS.RoadMultiplier.Second)
+				and (BCS.StreetMultiplier.CurrentX ~= 1 and BCS.StreetMultiplier.CurrentY ~= 1) then
+					BCS.ShowOverlayWidget(true)
 				else
-					OwnBuildingCostSystem.ShowOverlayWidget(false)
+					BCS.ShowOverlayWidget(false)
 				end
 			end	
 		elseif g_LastPlacedParam == true then --Trail
-			if (OwnBuildingCostSystem.TrailCosts ~= nil) then
-				local First, Second = OwnBuildingCostSystem.CalculateStreetCosts()
+			if (BCS.TrailCosts ~= nil) then
+				local First, Second = BCS.CalculateStreetCosts()
 				
-				GUI_Tooltip.TooltipCostsOnly({OwnBuildingCostSystem.TrailCosts[1], First, OwnBuildingCostSystem.TrailCosts[3], Second})
+				GUI_Tooltip.TooltipCostsOnly({BCS.TrailCosts[1], First, BCS.TrailCosts[3], Second})
 				XGUIEng.ShowWidget("/InGame/Root/Normal/TooltipCostsOnly", 1)
-				OwnBuildingCostSystem.StreetMultiplier.First = First
-				OwnBuildingCostSystem.StreetMultiplier.Second = Second
+				BCS.StreetMultiplier.First = First
+				BCS.StreetMultiplier.Second = Second
 				
-				if not OwnBuildingCostSystem.AreResourcesAvailable(4, First, Second)
-				and (OwnBuildingCostSystem.StreetMultiplier.CurrentX ~= 1 and OwnBuildingCostSystem.StreetMultiplier.CurrentY ~= 1) then
-					OwnBuildingCostSystem.ShowOverlayWidget(true)
+				if not BCS.AreResourcesAvailable(4, First, Second)
+				and (BCS.StreetMultiplier.CurrentX ~= 1 and BCS.StreetMultiplier.CurrentY ~= 1) then
+					BCS.ShowOverlayWidget(true)
 				else
-					OwnBuildingCostSystem.ShowOverlayWidget(false)
+					BCS.ShowOverlayWidget(false)
 				end
 			end
 		elseif g_LastPlacedParam == UpgradeCategories.PalisadeSegment then 
-			if OwnBuildingCostSystem.PalisadeCosts ~= nil then
+			if BCS.PalisadeCosts ~= nil then
 				local Costs = {Logic.GetCostForWall(Entities.B_PalisadeSegment, Entities.B_PalisadeTurret, StartTurretX, StartTurretY, EndTurretX, EndTurretY)}
-				if not OwnBuildingCostSystem.AreResourcesAvailable(3, Costs[2], Costs[4]) and (StartTurretX ~= 1 and StartTurretY ~= 1) then
-					OwnBuildingCostSystem.ShowOverlayWidget(true)
+				if not BCS.AreResourcesAvailable(3, Costs[2], Costs[4]) and (StartTurretX ~= 1 and StartTurretY ~= 1) then
+					BCS.ShowOverlayWidget(true)
 				else
-					OwnBuildingCostSystem.ShowOverlayWidget(false)
+					BCS.ShowOverlayWidget(false)
 				end	
 			end	
 		elseif g_LastPlacedParam == GetUpgradeCategoryForClimatezone("WallSegment") then
-			if OwnBuildingCostSystem.WallCosts ~= nil then -- Just check for ME since all climate zones have the same costs anyway
+			if BCS.WallCosts ~= nil then -- Just check for ME since all climate zones have the same costs anyway
 				local Costs = {Logic.GetCostForWall(Entities.B_WallSegment_ME, Entities.B_WallTurret_ME, StartTurretX, StartTurretY, EndTurretX, EndTurretY)}
-				if not OwnBuildingCostSystem.AreResourcesAvailable(2, Costs[2], Costs[4]) and (StartTurretX ~= 1 and StartTurretY ~= 1) then
-					OwnBuildingCostSystem.ShowOverlayWidget(true)
+				if not BCS.AreResourcesAvailable(2, Costs[2], Costs[4]) and (StartTurretX ~= 1 and StartTurretY ~= 1) then
+					BCS.ShowOverlayWidget(true)
 				else
-					OwnBuildingCostSystem.ShowOverlayWidget(false)
+					BCS.ShowOverlayWidget(false)
 				end	
 			end
 		else
-			if (OwnBuildingCostSystem.GetAwaitingVariable() == true) then
-				if not (OwnBuildingCostSystem.AreResourcesAvailable(g_LastPlacedParam)) then
-					OwnBuildingCostSystem.ShowOverlayWidget(true)
+			if (BCS.GetAwaitingVariable() == true) then
+				if not (BCS.AreResourcesAvailable(g_LastPlacedParam)) then
+					BCS.ShowOverlayWidget(true)
 				else
-					OwnBuildingCostSystem.ShowOverlayWidget(false)
+					BCS.ShowOverlayWidget(false)
 				end
 			end	
 		end
 		
-		OwnBuildingCostSystem.PlacementUpdate()	
+		BCS.PlacementUpdate()	
 	end
 	
-	if OwnBuildingCostSystem.GameCallback_GUI_PlacementState == nil then
-		OwnBuildingCostSystem.GameCallback_GUI_PlacementState = GameCallback_GUI_PlacementState;
+	if BCS.GameCallback_GUI_PlacementState == nil then
+		BCS.GameCallback_GUI_PlacementState = GameCallback_GUI_PlacementState;
 	end	
 	GameCallback_GUI_PlacementState = function(_State, _Type)
 		--This is needed because for some reason the Wall/Palisade Continue State does not call PlacementUpdate ?
-		if OwnBuildingCostSystem.IsInWallOrPalisadeContinueState == true then
+		if BCS.IsInWallOrPalisadeContinueState == true then
 			if g_LastPlacedParam == UpgradeCategories.PalisadeSegment then --Palisade
-				if OwnBuildingCostSystem.PalisadeCosts ~= nil then
+				if BCS.PalisadeCosts ~= nil then
 					local Costs = {Logic.GetCostForWall(Entities.B_PalisadeSegment, Entities.B_PalisadeTurret, StartTurretX, StartTurretY, EndTurretX, EndTurretY)}
-					if not OwnBuildingCostSystem.AreResourcesAvailable(3, Costs[2], Costs[4]) and (StartTurretX ~= 1 and StartTurretY ~= 1) then
-						OwnBuildingCostSystem.ShowOverlayWidget(true)
+					if not BCS.AreResourcesAvailable(3, Costs[2], Costs[4]) and (StartTurretX ~= 1 and StartTurretY ~= 1) then
+						BCS.ShowOverlayWidget(true)
 					else
-						OwnBuildingCostSystem.ShowOverlayWidget(false)
+						BCS.ShowOverlayWidget(false)
 					end	
 				end	
 			elseif g_LastPlacedParam == GetUpgradeCategoryForClimatezone("WallSegment") then
-				if OwnBuildingCostSystem.WallCosts ~= nil then
+				if BCS.WallCosts ~= nil then
 					local Costs = {Logic.GetCostForWall(Entities.B_WallSegment_ME, Entities.B_WallTurret_ME, StartTurretX, StartTurretY, EndTurretX, EndTurretY)}
-					if not OwnBuildingCostSystem.AreResourcesAvailable(2, Costs[2], Costs[4]) and (StartTurretX ~= 1 and StartTurretY ~= 1) then
-						OwnBuildingCostSystem.ShowOverlayWidget(true)
+					if not BCS.AreResourcesAvailable(2, Costs[2], Costs[4]) and (StartTurretX ~= 1 and StartTurretY ~= 1) then
+						BCS.ShowOverlayWidget(true)
 					else
-						OwnBuildingCostSystem.ShowOverlayWidget(false)
+						BCS.ShowOverlayWidget(false)
 					end	
 				end
 			end
 		end
-		OwnBuildingCostSystem.GameCallback_GUI_PlacementState()
+		BCS.GameCallback_GUI_PlacementState()
 	end
 	
-	if OwnBuildingCostSystem.GUI_StateChanged == nil then
-		OwnBuildingCostSystem.GUI_StateChanged = GameCallback_GUI_StateChanged;
+	if BCS.GUI_StateChanged == nil then
+		BCS.GUI_StateChanged = GameCallback_GUI_StateChanged;
 	end	
 	GameCallback_GUI_StateChanged = function(_StateNameID, _Armed)
-		OwnBuildingCostSystem.GUI_StateChanged(_StateNameID, _Armed)
+		BCS.GUI_StateChanged(_StateNameID, _Armed)
 		
-		OwnBuildingCostSystem.ShowOverlayWidget(false)		
+		BCS.ShowOverlayWidget(false)		
 		-- TODO: What happens when the player switches from e.g. PlaceBuilding into PlaceBuilding? 
 		-- Does this case work too?
 		-- CAN'T HAPPEN because all Building functions call GUI.CancelState() which should set the state to selection?
@@ -1066,27 +1070,27 @@ OwnBuildingCostSystem.InitializeOwnBuildingCostSystem = function()
 			and (_StateNameID ~= GUI.GetStateNameByID("PlaceWallGate"))
 			and (_StateNameID ~= GUI.GetStateNameByID("PlaceWall"))
 			and (_StateNameID ~= GUI.GetStateNameByID("PlaceRoad"))) then
-				OwnBuildingCostSystem.SetAwaitingVariable(false)
-				OwnBuildingCostSystem.ResetWallTurretPositions()
-				OwnBuildingCostSystem.ResetTrailAndRoadCosts()
-				GUI.SendScriptCommand([[OwnBuildingCostSystem.AreBuildingCostsAvailable = nil]])
+				BCS.SetAwaitingVariable(false)
+				BCS.ResetWallTurretPositions()
+				BCS.ResetTrailAndRoadCosts()
+				GUI.SendScriptCommand([[BCS.AreBuildingCostsAvailable = nil]])
 		end
 	end
 
-	if OwnBuildingCostSystem.AreCostsAffordable == nil then
-		OwnBuildingCostSystem.AreCostsAffordable = AreCostsAffordable;
+	if BCS.AreCostsAffordable == nil then
+		BCS.AreCostsAffordable = AreCostsAffordable;
 	end	
 	AreCostsAffordable = function(_Costs, _GoodsInSettlementBoolean)
-		if (OwnBuildingCostSystem.GetAwaitingVariable() == true) then
-			if (OwnBuildingCostSystem.AreResourcesAvailable(g_LastPlacedParam) == false) then
-				OwnBuildingCostSystem.CurrentExpectedBuildingType = nil
-				OwnBuildingCostSystem.SetAwaitingVariable(false)
+		if (BCS.GetAwaitingVariable() == true) then
+			if (BCS.AreResourcesAvailable(g_LastPlacedParam) == false) then
+				BCS.CurrentExpectedBuildingType = nil
+				BCS.SetAwaitingVariable(false)
 				return false, XGUIEng.GetStringTableText("Feedback_TextLines/TextLine_NotEnough_Resources")
 			else
 				return true
 			end
 		end
-		return OwnBuildingCostSystem.AreCostsAffordable(_Costs, _GoodsInSettlementBoolean)
+		return BCS.AreCostsAffordable(_Costs, _GoodsInSettlementBoolean)
 	end
 		
 	-- Trails don't work when called directly 
@@ -1101,15 +1105,15 @@ OwnBuildingCostSystem.InitializeOwnBuildingCostSystem = function()
 	end
 		
 	GUI.SendScriptCommand([[
-		if OwnBuildingCostSystem == nil then
-			OwnBuildingCostSystem = {}
-			OwnBuildingCostSystem.AreBuildingCostsAvailable = nil
+		if BCS == nil then
+			BCS = {}
+			BCS.AreBuildingCostsAvailable = nil
 		end
-		if OwnBuildingCostSystem.GameCallback_SettlerSpawned == nil then
-			OwnBuildingCostSystem.GameCallback_SettlerSpawned = GameCallback_SettlerSpawned;
+		if BCS.GameCallback_SettlerSpawned == nil then
+			BCS.GameCallback_SettlerSpawned = GameCallback_SettlerSpawned;
 		end
 		GameCallback_SettlerSpawned = function(_PlayerID, _EntityID)
-			OwnBuildingCostSystem.GameCallback_SettlerSpawned(_PlayerID, _EntityID)	
+			BCS.GameCallback_SettlerSpawned(_PlayerID, _EntityID)	
 			if (_PlayerID == 1) then
 				if (Logic.IsEntityInCategory(_EntityID, EntityCategories.Worker) == 1) 
 				or (Logic.GetEntityType(_EntityID) == Entities.U_OutpostConstructionWorker) 
@@ -1118,88 +1122,88 @@ OwnBuildingCostSystem.InitializeOwnBuildingCostSystem = function()
 					if WorkPlaceID ~= 0 and WorkPlaceID ~= nil and Logic.GetUpgradeLevel(_EntityID) > 0 then
 						return;
 					else
-						Logic.ExecuteInLuaLocalState("StartSimpleHiResJobEx(OwnBuildingCostSystem.GetCurrentlyGlobalBuilding, ".._EntityID..")")
+						Logic.ExecuteInLuaLocalState("StartSimpleHiResJobEx(BCS.GetCurrentlyGlobalBuilding, ".._EntityID..")")
 					end
 				end
 			end
 		end	
 	
-		if OwnBuildingCostSystem.GameCallback_BuildingDestroyed == nil then
-			OwnBuildingCostSystem.GameCallback_BuildingDestroyed = GameCallback_BuildingDestroyed;
+		if BCS.GameCallback_BuildingDestroyed == nil then
+			BCS.GameCallback_BuildingDestroyed = GameCallback_BuildingDestroyed;
 		end
 		GameCallback_BuildingDestroyed = function(_EntityID, _PlayerID, _KnockedDown)
-			OwnBuildingCostSystem.GameCallback_BuildingDestroyed(_EntityID, _PlayerID, _KnockedDown)
+			BCS.GameCallback_BuildingDestroyed(_EntityID, _PlayerID, _KnockedDown)
 			if (_KnockedDown == 1) and (_PlayerID == 1) then
-				Logic.ExecuteInLuaLocalState("OwnBuildingCostSystem.RefundKnockDown(".._EntityID..")")
+				Logic.ExecuteInLuaLocalState("BCS.RefundKnockDown(".._EntityID..")")
 			end
 		end
 		
-		if OwnBuildingCostSystem.GameCallback_CanPlayerPlaceBuilding == nil then
-			OwnBuildingCostSystem.GameCallback_CanPlayerPlaceBuilding = GameCallback_CanPlayerPlaceBuilding;
+		if BCS.GameCallback_CanPlayerPlaceBuilding == nil then
+			BCS.GameCallback_CanPlayerPlaceBuilding = GameCallback_CanPlayerPlaceBuilding;
 		end
 		GameCallback_CanPlayerPlaceBuilding = function(_PlayerID, _Type, _X, _Y)
-			if OwnBuildingCostSystem.AreBuildingCostsAvailable ~= nil then
-				return OwnBuildingCostSystem.AreBuildingCostsAvailable
+			if BCS.AreBuildingCostsAvailable ~= nil then
+				return BCS.AreBuildingCostsAvailable
 			else
-				return OwnBuildingCostSystem.GameCallback_CanPlayerPlaceBuilding(_PlayerID, _Type, _X, _Y)
+				return BCS.GameCallback_CanPlayerPlaceBuilding(_PlayerID, _Type, _X, _Y)
 			end
 		end
 	]])
 	
-	Framework.WriteToLog("BCS: Initialization Done! Version: "..OwnBuildingCostSystem.CurrentBCSVersion)
+	Framework.WriteToLog("BCS: Initialization Done! Version: "..BCS.CurrentBCSVersion)
 end
 
-OwnBuildingCostSystem.OverwriteEndScreenCallback = function()
-	if OwnBuildingCostSystem.EndScreen_ExitGame == nil then
-		OwnBuildingCostSystem.EndScreen_ExitGame = EndScreen_ExitGame;
+BCS.OverwriteEndScreenCallback = function()
+	if BCS.EndScreen_ExitGame == nil then
+		BCS.EndScreen_ExitGame = EndScreen_ExitGame;
 	end	
 	EndScreen_ExitGame = function()
 		GUI.CancelState()
-		OwnBuildingCostSystem.CurrentExpectedBuildingType = nil
+		BCS.CurrentExpectedBuildingType = nil
 		Message(XGUIEng.GetStringTableText("Feedback_TextLines/TextLine_NotEnough_Resources"))
 		Framework.WriteToLog("BCS: Resources Ran Out!")
 	end
 end
 
-OwnBuildingCostSystem.ShowOverlayWidget = function(_flag)
+BCS.ShowOverlayWidget = function(_flag)
 	if _flag == true then
-		if OwnBuildingCostSystem.OverlayIsCurrentlyShown == false then
+		if BCS.OverlayIsCurrentlyShown == false then
 			local ScreenSizeX, ScreenSizeY = GUI.GetScreenSize()
-			XGUIEng.SetWidgetSize(OwnBuildingCostSystem.OverlayWidget, ScreenSizeX * 2, ScreenSizeY * 2)
-			XGUIEng.PushPage(OwnBuildingCostSystem.OverlayWidget, false)
-			XGUIEng.ShowAllSubWidgets(OwnBuildingCostSystem.OverlayWidget, 1)
-			XGUIEng.ShowWidget(OwnBuildingCostSystem.OverlayWidget, 1)
+			XGUIEng.SetWidgetSize(BCS.OverlayWidget, ScreenSizeX * 2, ScreenSizeY * 2)
+			XGUIEng.PushPage(BCS.OverlayWidget, false)
+			XGUIEng.ShowAllSubWidgets(BCS.OverlayWidget, 1)
+			XGUIEng.ShowWidget(BCS.OverlayWidget, 1)
 			XGUIEng.ShowWidget('/EndScreen/EndScreen/Background', 0)
 			XGUIEng.ShowWidget('/EndScreen/EndScreen/BG', 1)
 			XGUIEng.SetMaterialColor("/EndScreen/EndScreen/BG", 0, 0, 0, 0, 0);
-			XGUIEng.SetWidgetScreenPosition(OwnBuildingCostSystem.OverlayWidget, -100, -100) --To be on the safe side ^^
+			XGUIEng.SetWidgetScreenPosition(BCS.OverlayWidget, -100, -100) --To be on the safe side ^^
 			
-			OwnBuildingCostSystem.OverlayIsCurrentlyShown = true
+			BCS.OverlayIsCurrentlyShown = true
 			
-			GUI.SendScriptCommand([[OwnBuildingCostSystem.AreBuildingCostsAvailable = false]])
+			GUI.SendScriptCommand([[BCS.AreBuildingCostsAvailable = false]])
 		end
 	else
-		if OwnBuildingCostSystem.OverlayIsCurrentlyShown == true then
-			XGUIEng.ShowAllSubWidgets(OwnBuildingCostSystem.OverlayWidget, 0)
-			XGUIEng.ShowWidget(OwnBuildingCostSystem.OverlayWidget, 0)
-			OwnBuildingCostSystem.OverlayIsCurrentlyShown = false
-			GUI.SendScriptCommand([[OwnBuildingCostSystem.AreBuildingCostsAvailable = nil]])
+		if BCS.OverlayIsCurrentlyShown == true then
+			XGUIEng.ShowAllSubWidgets(BCS.OverlayWidget, 0)
+			XGUIEng.ShowWidget(BCS.OverlayWidget, 0)
+			BCS.OverlayIsCurrentlyShown = false
+			GUI.SendScriptCommand([[BCS.AreBuildingCostsAvailable = nil]])
 		end
 	end
 end
 
-OwnBuildingCostSystem.CalculateVariableCosts = function(_startX, _startY, _endX, _endY)
+BCS.CalculateVariableCosts = function(_startX, _startY, _endX, _endY)
 	local xDistance = math.abs(_startX - _endX)
 	local yDistance = math.abs(_startY - _endY)
 	return ((math.sqrt((xDistance ^ 2) + (yDistance ^ 2))) / 1000)
 end
 
-OwnBuildingCostSystem.CalculateStreetCosts = function()
+BCS.CalculateStreetCosts = function()
 	local posX, posY = GUI.Debug_GetMapPositionUnderMouse()
-	if OwnBuildingCostSystem.StreetMultiplier.CurrentX ~= 1 and OwnBuildingCostSystem.StreetMultiplier.CurrentY ~= 1 then
-		local Distance = OwnBuildingCostSystem.CalculateVariableCosts(posX, posY, OwnBuildingCostSystem.StreetMultiplier.CurrentX, OwnBuildingCostSystem.StreetMultiplier.CurrentY)
-		local FirstCostDistance = math.floor(Distance * OwnBuildingCostSystem.TrailCosts[2])
-		local SecondCostDistance = math.floor(Distance * OwnBuildingCostSystem.TrailCosts[4])
+	if BCS.StreetMultiplier.CurrentX ~= 1 and BCS.StreetMultiplier.CurrentY ~= 1 then
+		local Distance = BCS.CalculateVariableCosts(posX, posY, BCS.StreetMultiplier.CurrentX, BCS.StreetMultiplier.CurrentY)
+		local FirstCostDistance = math.floor(Distance * BCS.TrailCosts[2])
+		local SecondCostDistance = math.floor(Distance * BCS.TrailCosts[4])
 		if FirstCostDistance < 1 then
 			FirstCostDistance = 1
 		end
@@ -1212,20 +1216,20 @@ OwnBuildingCostSystem.CalculateStreetCosts = function()
 	end
 end
 
-OwnBuildingCostSystem.ResetTrailAndRoadCosts = function()
-	OwnBuildingCostSystem.StreetMultiplier.First = 1
-	OwnBuildingCostSystem.StreetMultiplier.Second = 1
+BCS.ResetTrailAndRoadCosts = function()
+	BCS.StreetMultiplier.First = 1
+	BCS.StreetMultiplier.Second = 1
 
-	OwnBuildingCostSystem.StreetMultiplier.CurrentX = 1
-	OwnBuildingCostSystem.StreetMultiplier.CurrentY = 1
+	BCS.StreetMultiplier.CurrentX = 1
+	BCS.StreetMultiplier.CurrentY = 1
 	
-	OwnBuildingCostSystem.RoadMultiplier.First = 1
-	OwnBuildingCostSystem.RoadMultiplier.Second = 1
+	BCS.RoadMultiplier.First = 1
+	BCS.RoadMultiplier.Second = 1
 	
-	OwnBuildingCostSystem.RoadMultiplier.CurrentActualCost = 1
+	BCS.RoadMultiplier.CurrentActualCost = 1
 end
 
-OwnBuildingCostSystem.ResetWallTurretPositions = function()
+BCS.ResetWallTurretPositions = function()
 	StartTurretX = 1 
 	StartTurretY = 1
 	
@@ -1233,12 +1237,12 @@ OwnBuildingCostSystem.ResetWallTurretPositions = function()
 	EndTurretY = 1
 end
 
-OwnBuildingCostSystem.OverwriteOptionalBugfixFunctions = function()
-	if OwnBuildingCostSystem.BuildingNameUpdate == nil then
-		OwnBuildingCostSystem.BuildingNameUpdate = GUI_BuildingInfo.BuildingNameUpdate;	
+BCS.OverwriteOptionalBugfixFunctions = function()
+	if BCS.BuildingNameUpdate == nil then
+		BCS.BuildingNameUpdate = GUI_BuildingInfo.BuildingNameUpdate;	
 	end
 	GUI_BuildingInfo.BuildingNameUpdate = function()
-		OwnBuildingCostSystem.BuildingNameUpdate()
+		BCS.BuildingNameUpdate()
 		local CurrentWidgetID = XGUIEng.GetCurrentWidgetID()
 		if XGUIEng.GetText(CurrentWidgetID) == "{center}B_Cathedral_Big" then
 			XGUIEng.SetText(CurrentWidgetID, "{center}Kathedrale")
@@ -1246,44 +1250,44 @@ OwnBuildingCostSystem.OverwriteOptionalBugfixFunctions = function()
 	end
 end
 
-OwnBuildingCostSystem.EnsureQuestSystemBehaviorCompatibility = function()
-	if (API and QSB) and not OwnBuildingCostSystem.EnsuredQuestSystemBehaviorCompatibility then
+BCS.EnsureQuestSystemBehaviorCompatibility = function()
+	if (API and QSB) and not BCS.EnsuredQuestSystemBehaviorCompatibility then
 		if QSB.ScriptEvents ~= nil then
-			API.AddScriptEventListener(QSB.ScriptEvents.BriefingEnded, OwnBuildingCostSystem.OverwriteEndScreenCallback)
-			OwnBuildingCostSystem.EnsuredQuestSystemBehaviorCompatibility = true
+			API.AddScriptEventListener(QSB.ScriptEvents.BriefingEnded, BCS.OverwriteEndScreenCallback)
+			BCS.EnsuredQuestSystemBehaviorCompatibility = true
 		end
 	end
 	
 	if (API and QSB) and (QSB.ScriptEvents ~= nil and ModuleInterfaceCore ~= nil) then
-		OwnBuildingCostSystem.HuntableLifestockHandlerQSBCompatibility()
+		BCS.HuntableLifestockHandlerQSBCompatibility()
 	else
-		OwnBuildingCostSystem.HuntableLifestockHandler()
+		BCS.HuntableLifestockHandler()
 	end
 end
 
-OwnBuildingCostSystem.FestivalCostsHandler = function()
+BCS.FestivalCostsHandler = function()
 
-	if OwnBuildingCostSystem.GetFestivalCost == nil then
-		OwnBuildingCostSystem.GetFestivalCost = Logic.GetFestivalCost;	
+	if BCS.GetFestivalCost == nil then
+		BCS.GetFestivalCost = Logic.GetFestivalCost;	
 	end
 	Logic.GetFestivalCost = function(_PlayerID, _FestivalIndex)
-		if OwnBuildingCostSystem.CurrentFestivalCosts == nil then
-			return OwnBuildingCostSystem.GetFestivalCost(_PlayerID, _FestivalIndex)
+		if BCS.CurrentFestivalCosts == nil then
+			return BCS.GetFestivalCost(_PlayerID, _FestivalIndex)
 		else
-			local Costs = {OwnBuildingCostSystem.GetFestivalCost(_PlayerID, _FestivalIndex)}
-			return OwnBuildingCostSystem.CurrentFestivalCosts[1], Round(Costs[2] * OwnBuildingCostSystem.CurrentFestivalCosts[2]), OwnBuildingCostSystem.CurrentFestivalCosts[3], OwnBuildingCostSystem.CurrentFestivalCosts[4]
+			local Costs = {BCS.GetFestivalCost(_PlayerID, _FestivalIndex)}
+			return BCS.CurrentFestivalCosts[1], Round(Costs[2] * BCS.CurrentFestivalCosts[2]), BCS.CurrentFestivalCosts[3], BCS.CurrentFestivalCosts[4]
 		end
 	end
 
-	if OwnBuildingCostSystem.StartFestivalClicked == nil then
-		OwnBuildingCostSystem.StartFestivalClicked = GUI_BuildingButtons.StartFestivalClicked;	
+	if BCS.StartFestivalClicked == nil then
+		BCS.StartFestivalClicked = GUI_BuildingButtons.StartFestivalClicked;	
 	end
 	GUI_BuildingButtons.StartFestivalClicked = function(_FestivalIndex)
-		if OwnBuildingCostSystem.CurrentFestivalCosts == nil then
-			OwnBuildingCostSystem.StartFestivalClicked(_FestivalIndex)
+		if BCS.CurrentFestivalCosts == nil then
+			BCS.StartFestivalClicked(_FestivalIndex)
 		else
 			local PlayerID = GUI.GetPlayerID()
-			local CanBuyBoolean = OwnBuildingCostSystem.AreFestivalResourcesAvailable(PlayerID, _FestivalIndex)
+			local CanBuyBoolean = BCS.AreFestivalResourcesAvailable(PlayerID, _FestivalIndex)
 			local MarketID = GUI.GetSelectedEntity()
 	
 			if MarketID ~= Logic.GetMarketplace(PlayerID) then
@@ -1293,19 +1297,19 @@ OwnBuildingCostSystem.FestivalCostsHandler = function()
 			if CanBuyBoolean == true then
 				Sound.FXPlay2DSound("ui\\menu_click")
 				
-				local Type, OriginalAmount = OwnBuildingCostSystem.GetFestivalCost(PlayerID, _FestivalIndex)
-				local Amount = Round(OriginalAmount * OwnBuildingCostSystem.CurrentFestivalCosts[2])
+				local Type, OriginalAmount = BCS.GetFestivalCost(PlayerID, _FestivalIndex)
+				local Amount = Round(OriginalAmount * BCS.CurrentFestivalCosts[2])
 				
 				Amount = Amount - OriginalAmount
 				
-				GUI.RemoveGoodFromStock(OwnBuildingCostSystem.GetEntityIDToAddToOutStock(Goods.G_Gold), Goods.G_Gold, Amount)	
+				GUI.RemoveGoodFromStock(BCS.GetEntityIDToAddToOutStock(Goods.G_Gold), Goods.G_Gold, Amount)	
 
 				-- Can be city goods too
-				local CurrentID = OwnBuildingCostSystem.GetEntityIDToAddToOutStock(OwnBuildingCostSystem.CurrentFestivalCosts[3])
+				local CurrentID = BCS.GetEntityIDToAddToOutStock(BCS.CurrentFestivalCosts[3])
 				if CurrentID == false then
-					OwnBuildingCostSystem.RemoveCostsFromOutStockCityGoods(OwnBuildingCostSystem.CurrentFestivalCosts[3], OwnBuildingCostSystem.CurrentFestivalCosts[4], PlayerID, false)
+					BCS.RemoveCostsFromOutStockCityGoods(BCS.CurrentFestivalCosts[3], BCS.CurrentFestivalCosts[4], PlayerID, false)
 				else
-					GUI.RemoveGoodFromStock(CurrentID, OwnBuildingCostSystem.CurrentFestivalCosts[3], OwnBuildingCostSystem.CurrentFestivalCosts[4])				
+					GUI.RemoveGoodFromStock(CurrentID, BCS.CurrentFestivalCosts[3], BCS.CurrentFestivalCosts[4])				
 				end
 			
 				GUI.StartFestival(PlayerID, _FestivalIndex)
@@ -1320,49 +1324,49 @@ OwnBuildingCostSystem.FestivalCostsHandler = function()
 		end
 	end
 end
-OwnBuildingCostSystem.AreFestivalResourcesAvailable = function(_PlayerID, _FestivalIndex)
+BCS.AreFestivalResourcesAvailable = function(_PlayerID, _FestivalIndex)
 	local AmountOfFirstGood, AmountOfSecondGood;
-	local Costs = {OwnBuildingCostSystem.GetFestivalCost(_PlayerID, _FestivalIndex)}
+	local Costs = {BCS.GetFestivalCost(_PlayerID, _FestivalIndex)}
 	
 	-- First one is always gold
-	AmountOfFirstGood = Logic.GetAmountOnOutStockByGoodType(OwnBuildingCostSystem.GetEntityIDToAddToOutStock(OwnBuildingCostSystem.CurrentFestivalCosts[1]), OwnBuildingCostSystem.CurrentFestivalCosts[1])
+	AmountOfFirstGood = Logic.GetAmountOnOutStockByGoodType(BCS.GetEntityIDToAddToOutStock(BCS.CurrentFestivalCosts[1]), BCS.CurrentFestivalCosts[1])
 	
-	local CurrentID = OwnBuildingCostSystem.GetEntityIDToAddToOutStock(OwnBuildingCostSystem.CurrentFestivalCosts[3])
+	local CurrentID = BCS.GetEntityIDToAddToOutStock(BCS.CurrentFestivalCosts[3])
 	if CurrentID == false then
-		AmountOfSecondGood = OwnBuildingCostSystem.GetAmountOfGoodsInSettlement(OwnBuildingCostSystem.CurrentFestivalCosts[3], _PlayerID, false)
+		AmountOfSecondGood = BCS.GetAmountOfGoodsInSettlement(BCS.CurrentFestivalCosts[3], _PlayerID, false)
 	else
-		AmountOfSecondGood = Logic.GetAmountOnOutStockByGoodType(CurrentID, OwnBuildingCostSystem.CurrentFestivalCosts[3])
+		AmountOfSecondGood = Logic.GetAmountOnOutStockByGoodType(CurrentID, BCS.CurrentFestivalCosts[3])
 	end
 	
-	if (AmountOfFirstGood < Round(Costs[2] * OwnBuildingCostSystem.CurrentFestivalCosts[2]) or AmountOfSecondGood < OwnBuildingCostSystem.CurrentFestivalCosts[4]) then
+	if (AmountOfFirstGood < Round(Costs[2] * BCS.CurrentFestivalCosts[2]) or AmountOfSecondGood < BCS.CurrentFestivalCosts[4]) then
 		return false
 	else
 		return true
 	end
 end
 
-OwnBuildingCostSystem.HuntableLifestockHandler = function()
+BCS.HuntableLifestockHandler = function()
 
-	if OwnBuildingCostSystem.StartSermonClicked == nil then
-		OwnBuildingCostSystem.StartSermonClicked = GUI_BuildingButtons.StartSermonClicked;	
+	if BCS.StartSermonClicked == nil then
+		BCS.StartSermonClicked = GUI_BuildingButtons.StartSermonClicked;	
 	end
 	GUI_BuildingButtons.StartSermonClicked = function()		
 		local PlayerID = GUI.GetPlayerID()
 		local EntityID = GUI.GetSelectedEntity()
 		if EntityID == Logic.GetCathedral(PlayerID) then
-			OwnBuildingCostSystem.StartSermonClicked()
+			BCS.StartSermonClicked()
 		else
-			if OwnBuildingCostSystem.HuntableAnimals == true then
+			if BCS.HuntableAnimals == true then
 				local Type = Logic.GetEntityType(EntityID)
 				if Type == Entities.B_HuntersHut then
-					OwnBuildingCostSystem.HuntableLifestockChangedIndex(EntityID)
+					BCS.HuntableLifestockChangedIndex(EntityID)
 				end
 			end
 		end
 	end
 	
-	if OwnBuildingCostSystem.StartSermonUpdate == nil then
-		OwnBuildingCostSystem.StartSermonUpdate = GUI_BuildingButtons.StartSermonUpdate;	
+	if BCS.StartSermonUpdate == nil then
+		BCS.StartSermonUpdate = GUI_BuildingButtons.StartSermonUpdate;	
 	end
 	GUI_BuildingButtons.StartSermonUpdate = function()
 		local PlayerID = GUI.GetPlayerID()
@@ -1371,27 +1375,27 @@ OwnBuildingCostSystem.HuntableLifestockHandler = function()
 		
 		if EntityID == Logic.GetCathedral(PlayerID) then
 			SetIcon(CurrentWidgetID, {4, 14})
-			OwnBuildingCostSystem.StartSermonUpdate()
+			BCS.StartSermonUpdate()
 			return;
 		end
 
 		local EntityType = Logic.GetEntityType(EntityID)
-		if EntityType == Entities.B_HuntersHut and OwnBuildingCostSystem.HuntableAnimals == true then
+		if EntityType == Entities.B_HuntersHut and BCS.HuntableAnimals == true then
 			XGUIEng.ShowWidget(CurrentWidgetID, 1)
 			XGUIEng.DisableButton(CurrentWidgetID, 0)
 			
-			OwnBuildingCostSystem.HuntableLifestockHandleUpdateButton(CurrentWidgetID, EntityID)	
+			BCS.HuntableLifestockHandleUpdateButton(CurrentWidgetID, EntityID)	
 		else
 			XGUIEng.ShowWidget(CurrentWidgetID, 0)
 			return;
 		end
 	end
 	
-	if OwnBuildingCostSystem.SetNameAndDescription == nil then
-		OwnBuildingCostSystem.SetNameAndDescription = GUI_Tooltip.SetNameAndDescription;	
+	if BCS.SetNameAndDescription == nil then
+		BCS.SetNameAndDescription = GUI_Tooltip.SetNameAndDescription;	
 	end
 	GUI_Tooltip.SetNameAndDescription = function(_TooltipNameWidget, _TooltipDescriptionWidget, _OptionalTextKeyName, _OptionalDisabledTextKeyName, _OptionalMissionTextFileBoolean)
-		if OwnBuildingCostSystem.HuntableAnimals == true and (_TooltipNameWidget) == 98 then --StartSermon
+		if BCS.HuntableAnimals == true and (_TooltipNameWidget) == 98 then --StartSermon
 			if Logic.GetEntityType(GUI.GetSelectedEntity()) == Entities.B_HuntersHut then
 				local Entity = GUI.GetSelectedEntity()
 				local HuntCowsAllowed = Logic.GetOptionalHuntableState(Entity, 2)
@@ -1404,19 +1408,19 @@ OwnBuildingCostSystem.HuntableLifestockHandler = function()
 				else
 					ToolTipText = "keine Weidetiere"
 				end
-				OwnBuildingCostSystem.SetUserTooltip("Jagd auf Weidetiere", "Gebt Schafe und Kühe zur Jagd frei!{cr}{@color:0,128,0,255}Momentan werden "..ToolTipText.." gejagt!", _TooltipNameWidget, _TooltipDescriptionWidget)
+				BCS.SetUserTooltip("Jagd auf Weidetiere", "Gebt Schafe und Kühe zur Jagd frei!{cr}{@color:0,128,0,255}Momentan werden "..ToolTipText.." gejagt!", _TooltipNameWidget, _TooltipDescriptionWidget)
 				return;
 			end
 		end
-		OwnBuildingCostSystem.SetNameAndDescription(_TooltipNameWidget, _TooltipDescriptionWidget, _OptionalTextKeyName, _OptionalDisabledTextKeyName, _OptionalMissionTextFileBoolean)
+		BCS.SetNameAndDescription(_TooltipNameWidget, _TooltipDescriptionWidget, _OptionalTextKeyName, _OptionalDisabledTextKeyName, _OptionalMissionTextFileBoolean)
 	end
 end
 
-OwnBuildingCostSystem.HuntableLifestockHandlerQSBCompatibility = function()
-	if OwnBuildingCostSystem.HunterButtonID == nil then
-		OwnBuildingCostSystem.HunterButtonID = API.AddBuildingButton(
+BCS.HuntableLifestockHandlerQSBCompatibility = function()
+	if BCS.HunterButtonID == nil then
+		BCS.HunterButtonID = API.AddBuildingButton(
 		function(_WidgetID, _BuildingID)
-			OwnBuildingCostSystem.HuntableLifestockChangedIndex(_BuildingID)
+			BCS.HuntableLifestockChangedIndex(_BuildingID)
 		end,
 		function(_WidgetID, _BuildingID)
 			local HuntCowsAllowed = Logic.GetOptionalHuntableState(_BuildingID, 2)
@@ -1433,9 +1437,9 @@ OwnBuildingCostSystem.HuntableLifestockHandlerQSBCompatibility = function()
 		end,
 		-- Update
 		function(_WidgetID, _BuildingID)
-			if Logic.GetEntityType(_BuildingID) == Entities.B_HuntersHut and OwnBuildingCostSystem.HuntableAnimals == true then
+			if Logic.GetEntityType(_BuildingID) == Entities.B_HuntersHut and BCS.HuntableAnimals == true then
 				XGUIEng.ShowWidget(_WidgetID, 1)
-				OwnBuildingCostSystem.HuntableLifestockHandleUpdateButton(_WidgetID, _BuildingID)	
+				BCS.HuntableLifestockHandleUpdateButton(_WidgetID, _BuildingID)	
 			else
 				XGUIEng.ShowWidget(_WidgetID, 0)	
 			end
@@ -1443,7 +1447,7 @@ OwnBuildingCostSystem.HuntableLifestockHandlerQSBCompatibility = function()
 	end
 end
 
-OwnBuildingCostSystem.HuntableLifestockHandleUpdateButton = function(_WidgetID, _BuildingID)	
+BCS.HuntableLifestockHandleUpdateButton = function(_WidgetID, _BuildingID)	
 	local HuntCowsAllowed = Logic.GetOptionalHuntableState(_BuildingID, 2)
 	local HuntSheepAllowed = Logic.GetOptionalHuntableState(_BuildingID, 1)	
 	
@@ -1455,7 +1459,7 @@ OwnBuildingCostSystem.HuntableLifestockHandleUpdateButton = function(_WidgetID, 
 		SetIcon(_WidgetID, {3, 16});			
 	end
 end
-OwnBuildingCostSystem.HuntableLifestockChangedIndex = function(_BuildingID)
+BCS.HuntableLifestockChangedIndex = function(_BuildingID)
 	local HuntCowsAllowed = Logic.GetOptionalHuntableState(_BuildingID, 2)
 	local HuntSheepAllowed = Logic.GetOptionalHuntableState(_BuildingID, 1)
 	
@@ -1475,7 +1479,7 @@ OwnBuildingCostSystem.HuntableLifestockChangedIndex = function(_BuildingID)
 	Sound.FXPlay2DSound("ui\\menu_click")
 	Framework.WriteToLog("BCS: Changed Huntable Category at Building "..tostring(_BuildingID).."!")
 end
-OwnBuildingCostSystem.SetUserTooltip = function(_Name, _Description, _TooltipNameWidget, _TooltipDescriptionWidget)
+BCS.SetUserTooltip = function(_Name, _Description, _TooltipNameWidget, _TooltipDescriptionWidget)
 	XGUIEng.SetText(_TooltipNameWidget, "{center}" .. _Name)
 	XGUIEng.SetText(_TooltipDescriptionWidget, "{center}" .. _Description)
     
