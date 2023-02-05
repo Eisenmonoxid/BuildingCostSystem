@@ -951,6 +951,7 @@ end
 	-- > This here is the function that initializes the whole Building Cost System
 	-- > Has to be called before everything else
 -- ]]
+
 BCS.InitializeBuildingCostSystem = function()
 
 	BCS.OverwriteAfterPlacement()

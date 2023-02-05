@@ -1,14 +1,31 @@
 function SetMyBuildingCosts()
 	--[[
-		-> This function has to be called from the local script after BCS.InitializeBCS()
+		-> This function has to be called from the local script after BCS.InitializeBuildingCostSystem()
 		-> You can change all costs at every time in the game. 
 		-> The first good amount has to be equal or higher than the original costs.
 		-> The second good and amount can be chosen freely.
 		
-		-> Diese Funktion muss aus dem lokalen Skript aufgerufen werden nach BCS.InitializeBCS()
+		-> Diese Funktion muss aus dem lokalen Skript aufgerufen werden nach BCS.InitializeBuildingCostSystem()
 		-> Es können alle Gebäudekosten zu jedem Zeitpunkt im Spiel geändert werden.
 		-> Die Höhe der ersten Ware muss gleich oder höher dem Originalwert liegen!
 		-> Die zweite Ware und ihre Höhe können frei festgelegt werden.
+		
+		Example call from the local lua script:
+		
+		function Mission_LocalOnMapStart()
+			Script.Load("C:\\Path\\bcs_local.lua")
+			Script.Load("C:\\Path\\bcs_costs.lua")
+	
+			if BCS ~= nil then
+				BCS.InitializeBuildingCostSystem() -- Init system
+				SetMyBuildingCosts() -- Set Custom Costs
+			else
+				Framework.WriteToLog("ERROR: Could not load BuildingCostSystem!")
+				Game.LevelStop()
+				Framework.CloseGame()
+			end
+		end
+		
 	]]--
 
 	--Gatherer - Farms
