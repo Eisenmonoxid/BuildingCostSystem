@@ -78,14 +78,14 @@ function SetMyBuildingCosts()
 	BCS.EditBuildingCosts(UpgradeCategories.PalisadeGate, 10, Goods.G_Dye, 6)
 	BCS.EditBuildingCosts(UpgradeCategories.WallGate_SouthEurope, 16, Goods.G_Olibanum, 6) --Replace SouthEurope with your climate zone! / Ersetze SouthEurope mit deiner derzeitigen Klimazone!
 	--Buildings without fixed cost
-	BCS.EditWallCosts(4.2, Goods.G_Grain, 3) --Wallcosts/Mauerkosten (No production goods/Keine Verbrauchsgüter)
-	BCS.EditPalisadeCosts(3.5, Goods.G_Gems, 5) --Palisadecosts/Palisadenkosten (No production goods/Keine Verbrauchsgüter)
-	BCS.EditRoadCosts(3, Goods.G_Gems, 1.8) --Roadcosts/Straßenkosten (No production goods/Keine Verbrauchsgüter)
-	BCS.EditTrailCosts(Goods.G_Herb, 1.5, Goods.G_Wood, 1) --Streetcosts/Wegkosten (No production goods/Keine Verbrauchsgüter)
+	BCS.EditWallCosts(4.2, Goods.G_Grain, 3) --Wallcosts/Mauerkosten
+	BCS.EditPalisadeCosts(3.5, Goods.G_Gems, 5) --Palisadecosts/Palisadenkosten
+	BCS.EditRoadCosts(3, Goods.G_Leather, 1.8) --Roadcosts/Straßenkosten
+	BCS.EditTrailCosts(Goods.G_Herb, 1.5, Goods.G_Sausage, 1) --Streetcosts/Wegkosten
 	
 	BCS.EditFestivalCosts(1.5, Goods.G_Sausage, 15) --Festivalcosts/Festkosten
-	--The first arguments here are multiplicators, that means that 1.5 f.e means 1.5 times the original cost
-	--Die ersten Argumente hier sind Multiplikatoren, das bedeutet das 1.5 heißt: 1.5 Mal die originalen Kosten
+	--The first arguments here are multiplicators, that means: 1.5 -> 1.5 times the original cost
+	--Die ersten Argumente hier sind Multiplikatoren, heißt: 1.5 -> 1.5 mal den Originalbetrag
 	
 	BCS.ActivateHuntableAnimals(true) --The hunter can hunt lifestock as well! / Der Jäger kann auch Weidetiere jagen!
 	
@@ -97,21 +97,23 @@ function SetMyBuildingCosts()
 	Goods.G_RawFish, Goods.G_Grain, Goods.G_Wood, Goods.G_Iron, Goods.G_Carcass, Goods.G_Stone, Goods.G_Herb, Goods.G_Honeycomb, Goods.G_Wool, Goods.G_Milk,
 	Goods.G_Gems, Goods.G_Dye, Goods.G_Salt, Goods.G_Olibanum, Goods.G_MusicalInstrument
 	
-	Including ALL City Goods from City Buildings, e.g. ... (!THESE GOODS DO NOT WORK WITH VARIABLE COST BUILDINGS like Wall, Palisade, Road and Trail and Festival)
-	Inkludierend ALLER Verbrauchsgüter von Stadtgebäuden, zum Beispiel ... (!Diese Güter funktionieren nicht bei variablen Kostengebäuden wie Mauer, Palisade, Straße und Weg und Fest)
+	Including ALL City Goods from City Buildings, e.g. ... 
+	Inkludierend ALLER Verbrauchsgüter von Stadtgebäuden, zum Beispiel ...
 	
 	Goods.G_Beer, Goods.G_Bread, Goods.G_Broom, Goods.G_Cheese, Goods.G_Clothes, Goods.G_Leather, Goods.G_Medicine,
 	Goods.G_PoorBow, Goods.G_PoorSword, Goods.G_Sausage, Goods.G_SmokedFish, Goods.G_Soap, etc ...
 
 	]]--
 	
-	--This function here sets the amount of goods that are returned when the building is knocked down!
+	--This function here sets the amount of goods that are refunded when the building is knocked down.
 	--Standard is 20% of the original good and half of the new good.
 	--If you want to return f.e. 80 percent of the new good, then replace 0.5 with 0.8
+	--Refunding does not work with walls and palisades.
 	
-	--Diese Funktion hier setzt die Höhe der Rückerstattung bei Abriss des Gebäudes!
+	--Diese Funktion hier setzt die Höhe der Rückerstattung bei Abriss des Gebäudes.
 	--Standardmäßig sind 20% Rückerstattung der originalen Ware und die Hälfte der neuen Ware eingestellt.
 	--Wenn man z.B 80% der neuen Ware rückerstatten lassen will, ersetzt man 0.5 durch 0.8
+	--Rückerstattung funktioniert nicht bei Mauern und Palisaden.
 	BCS.SetKnockDownFactor(0.2, 0.5)
 	
 	--This function here sets whether city goods (Goods.G_Sausage, etc.) will be refunded at knock down.

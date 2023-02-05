@@ -43,7 +43,7 @@ BCS.HunterButtonID = nil
 BCS.OverlayWidget = "/EndScreen"
 BCS.OverlayIsCurrentlyShown = false
 BCS.EnsuredQuestSystemBehaviorCompatibility = false
-BCS.CurrentBCSVersion = "3.5 - 04.02.2023 05:31"
+BCS.CurrentBCSVersion = "3.6 - 05.02.2023 13:41"
 
 ----------------------------------------------------------------------------------------------------------------------
 --These functions are exported to Userspace---------------------------------------------------------------------------
@@ -363,8 +363,6 @@ BCS.AreResourcesAvailable = function(_upgradeCategory, _FGoodAmount, _SGoodAmoun
 	end
 	
 	local AmountOfFirstGood, AmountOfSecondGood
-	--AmountOfFirstGood = GetPlayerGoodsInSettlement(Costs[1], PlayerID, BCS.MarketplaceGoodsCount)
-	--AmountOfSecondGood = GetPlayerGoodsInSettlement(Costs[3], PlayerID, BCS.MarketplaceGoodsCount)
 	AmountOfFirstGood = BCS.GetAmountOfGoodsInSettlement(Costs[1], PlayerID, BCS.MarketplaceGoodsCount)
 	AmountOfSecondGood = BCS.GetAmountOfGoodsInSettlement(Costs[3], PlayerID, BCS.MarketplaceGoodsCount)
 	
@@ -809,8 +807,8 @@ BCS.OverwriteTooltipHandling = function()
 		local Good1ContainerPath = TooltipCostsContainerPath .. "/1Good"
 		local Goods2ContainerPath = TooltipCostsContainerPath .. "/2Goods"
 		local NumberOfValidAmounts, Good1Path, Good2Path = 0, 0, 0
-		local BCSBuildingInCostTable = false
-		local IsFestivalCosts = false
+		local BCSBuildingInCostTable, IsFestival, IsVariableCostBuilding = false, false, false
+		local CurrentState = GUI.GetCurrentStateID()
 		
 		local Name = XGUIEng.GetWidgetNameByID(XGUIEng.GetCurrentWidgetID())
 		if Name == "Street" and BCS.RoadCosts ~= nil then
@@ -821,8 +819,11 @@ BCS.OverwriteTooltipHandling = function()
 			_Costs = {BCS.PalisadeCosts[1], -1, BCS.PalisadeCosts[3], -1}		
 		elseif Name == "Wall" and BCS.WallCosts ~= nil then
 			_Costs = {BCS.WallCosts[1], -1, BCS.WallCosts[3], -1}	
-		elseif Name == "StartFestival" and BCS.CurrentFestivalCosts ~= nil then
-			IsFestivalCosts = true
+		elseif (Name == "StartFestival" and BCS.CurrentFestivalCosts ~= nil) then
+			IsFestival = true
+		elseif (CurrentState == 2 or CurrentState == 5) then
+			-- 2 == "PlaceRoad" | 5 == "PlaceWall" -> GUI.GetCurrentStateName()
+			IsVariableCostBuilding = true
 		elseif Name == "PlaceField" then
 			local EntityType = Logic.GetEntityType(GUI.GetSelectedEntity())
 			local UpgradeCategory
@@ -889,14 +890,13 @@ BCS.OverwriteTooltipHandling = function()
 				SetIcon(IconWidget, g_TexturePositions.Goods[CostsGoodType], 44)
             
 				local PlayerID = GUI.GetPlayerID()
-				local PlayersGoodAmount, ID
+				local PlayersGoodAmount
 				
 				-- Changed
 				local ID = BCS.GetEntityIDToAddToOutStock(CostsGoodType)
-				if (ID == false and BCSBuildingInCostTable == true) then
-					--PlayersGoodAmount = GetPlayerGoodsInSettlement(CostsGoodType, PlayerID, true)
+				if (ID == false and BCSBuildingInCostTable == true) or (ID == false and IsVariableCostBuilding == true) then
 					PlayersGoodAmount = BCS.GetAmountOfGoodsInSettlement(CostsGoodType, PlayerID, BCS.MarketplaceGoodsCount)
-				elseif IsFestivalCosts == true then
+				elseif IsFestival == true then
 					PlayersGoodAmount = BCS.GetAmountOfGoodsInSettlement(CostsGoodType, PlayerID, false)
 				elseif _GoodsInSettlementBoolean == true then
 					PlayersGoodAmount = GetPlayerGoodsInSettlement(CostsGoodType, PlayerID, true)
@@ -972,6 +972,7 @@ BCS.InitializeBuildingCostSystem = function()
 	GUI_Construction.PlacementUpdate = function()	
 		
 		if g_LastPlacedParam == false then --Road
+		
 			if (BCS.RoadCosts ~= nil) then
 				if not BCS.AreResourcesAvailable(1, BCS.RoadMultiplier.First, BCS.RoadMultiplier.Second)
 				and (BCS.StreetMultiplier.CurrentX ~= 1 and BCS.StreetMultiplier.CurrentY ~= 1) then
@@ -980,7 +981,9 @@ BCS.InitializeBuildingCostSystem = function()
 					BCS.ShowOverlayWidget(false)
 				end
 			end	
+			
 		elseif g_LastPlacedParam == true then --Trail
+		
 			if (BCS.TrailCosts ~= nil) then
 				local First, Second = BCS.CalculateStreetCosts()
 				
@@ -996,7 +999,9 @@ BCS.InitializeBuildingCostSystem = function()
 					BCS.ShowOverlayWidget(false)
 				end
 			end
+			
 		elseif g_LastPlacedParam == UpgradeCategories.PalisadeSegment then 
+		
 			if BCS.PalisadeCosts ~= nil then
 				local Costs = {Logic.GetCostForWall(Entities.B_PalisadeSegment, Entities.B_PalisadeTurret, StartTurretX, StartTurretY, EndTurretX, EndTurretY)}
 				if not BCS.AreResourcesAvailable(3, Costs[2], Costs[4]) and (StartTurretX ~= 1 and StartTurretY ~= 1) then
@@ -1005,7 +1010,9 @@ BCS.InitializeBuildingCostSystem = function()
 					BCS.ShowOverlayWidget(false)
 				end	
 			end	
+			
 		elseif g_LastPlacedParam == GetUpgradeCategoryForClimatezone("WallSegment") then
+		
 			if BCS.WallCosts ~= nil then -- Just check for ME since all climate zones have the same costs anyway
 				local Costs = {Logic.GetCostForWall(Entities.B_WallSegment_ME, Entities.B_WallTurret_ME, StartTurretX, StartTurretY, EndTurretX, EndTurretY)}
 				if not BCS.AreResourcesAvailable(2, Costs[2], Costs[4]) and (StartTurretX ~= 1 and StartTurretY ~= 1) then
@@ -1014,7 +1021,9 @@ BCS.InitializeBuildingCostSystem = function()
 					BCS.ShowOverlayWidget(false)
 				end	
 			end
+			
 		else
+		
 			if (BCS.GetAwaitingVariable() == true) then
 				if not (BCS.AreResourcesAvailable(g_LastPlacedParam)) then
 					BCS.ShowOverlayWidget(true)
@@ -1022,6 +1031,7 @@ BCS.InitializeBuildingCostSystem = function()
 					BCS.ShowOverlayWidget(false)
 				end
 			end	
+			
 		end
 		
 		BCS.PlacementUpdate()	
@@ -1031,8 +1041,14 @@ BCS.InitializeBuildingCostSystem = function()
 		BCS.GameCallback_GUI_PlacementState = GameCallback_GUI_PlacementState;
 	end	
 	GameCallback_GUI_PlacementState = function(_State, _Type)
+		--Message(_State.." - ".._Type) 
+		
+		-- _Type = Building, Road, Wall, ...
+		-- _State = Current Blocking State
+		
 		--This is needed because for some reason the Wall/Palisade Continue State does not call PlacementUpdate ?
 		if BCS.IsInWallOrPalisadeContinueState == true then
+		
 			if g_LastPlacedParam == UpgradeCategories.PalisadeSegment then --Palisade
 				if BCS.PalisadeCosts ~= nil then
 					local Costs = {Logic.GetCostForWall(Entities.B_PalisadeSegment, Entities.B_PalisadeTurret, StartTurretX, StartTurretY, EndTurretX, EndTurretY)}
@@ -1052,6 +1068,7 @@ BCS.InitializeBuildingCostSystem = function()
 					end	
 				end
 			end
+			
 		end
 		BCS.GameCallback_GUI_PlacementState()
 	end
