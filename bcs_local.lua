@@ -1070,7 +1070,7 @@ BCS.InitializeBuildingCostSystem = function()
 			end
 			
 		end
-		BCS.GameCallback_GUI_PlacementState()
+		BCS.GameCallback_GUI_PlacementState(_State, _Type)
 	end
 	
 	if BCS.GUI_StateChanged == nil then
