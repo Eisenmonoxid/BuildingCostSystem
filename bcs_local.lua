@@ -43,7 +43,7 @@ BCS.HunterButtonID = nil
 BCS.OverlayWidget = "/EndScreen"
 BCS.OverlayIsCurrentlyShown = false
 BCS.EnsuredQuestSystemBehaviorCompatibility = false
-BCS.CurrentBCSVersion = "3.6 - 05.02.2023 13:41"
+BCS.CurrentBCSVersion = "3.7 - 08.02.2023 11:26"
 
 ----------------------------------------------------------------------------------------------------------------------
 --These functions are exported to Userspace---------------------------------------------------------------------------
@@ -946,6 +946,61 @@ BCS.OverwriteTooltipHandling = function()
 		end
 	end
 end
+BCS.HandlePlacementModeUpdate = function(_currentUpgradeCategory)
+	local LastPlaced = _currentUpgradeCategory
+	local Available = false
+	
+	if (LastPlaced == false) and (BCS.RoadCosts ~= nil) then --Road
+		Available = BCS.AreResourcesAvailable(1, BCS.RoadMultiplier.First, BCS.RoadMultiplier.Second)
+		if (Available == false) and (BCS.StreetMultiplier.CurrentX ~= 1 and BCS.StreetMultiplier.CurrentY ~= 1) then
+			BCS.ShowOverlayWidget(true)
+		else
+			BCS.ShowOverlayWidget(false)
+		end
+	elseif (LastPlaced == true) and (BCS.TrailCosts ~= nil) then --Trail
+		local CurrentAmountOfFirstGood, CurrentAmountOfSecondGood = BCS.CalculateStreetCosts()	
+		
+		GUI_Tooltip.TooltipCostsOnly({BCS.TrailCosts[1], CurrentAmountOfFirstGood, BCS.TrailCosts[3], CurrentAmountOfSecondGood})
+		XGUIEng.ShowWidget("/InGame/Root/Normal/TooltipCostsOnly", 1) -- Trail has no costs in original game, so we have to show the tooltip manually
+		
+		BCS.StreetMultiplier.First = CurrentAmountOfFirstGood
+		BCS.StreetMultiplier.Second = CurrentAmountOfSecondGood
+		
+		Available = BCS.AreResourcesAvailable(4, CurrentAmountOfFirstGood, CurrentAmountOfSecondGood)
+				
+		if (Available == false) and (BCS.StreetMultiplier.CurrentX ~= 1 and BCS.StreetMultiplier.CurrentY ~= 1) then
+			BCS.ShowOverlayWidget(true)
+		else
+			BCS.ShowOverlayWidget(false)
+		end	
+	elseif (LastPlaced == UpgradeCategories.PalisadeSegment) and (BCS.PalisadeCosts ~= nil) then 
+		local Costs = {Logic.GetCostForWall(Entities.B_PalisadeSegment, Entities.B_PalisadeTurret, StartTurretX, StartTurretY, EndTurretX, EndTurretY)}
+		
+		Available = BCS.AreResourcesAvailable(3, Costs[2], Costs[4])
+		if (Available == false) and (StartTurretX ~= 1 and StartTurretY ~= 1) then
+			BCS.ShowOverlayWidget(true)
+		else
+			BCS.ShowOverlayWidget(false)
+		end	
+	elseif (LastPlaced == GetUpgradeCategoryForClimatezone("WallSegment")) and (BCS.WallCosts ~= nil) then
+		-- Just check for ME since all climate zones have the same costs anyway
+		local Costs = {Logic.GetCostForWall(Entities.B_WallSegment_ME, Entities.B_WallTurret_ME, StartTurretX, StartTurretY, EndTurretX, EndTurretY)}
+		Available = BCS.AreResourcesAvailable(2, Costs[2], Costs[4])
+		if (Available == false) and (StartTurretX ~= 1 and StartTurretY ~= 1) then
+			BCS.ShowOverlayWidget(true)
+		else
+			BCS.ShowOverlayWidget(false)
+		end	
+	else
+		if (BCS.GetAwaitingVariable() == true) then
+			if not (BCS.AreResourcesAvailable(LastPlaced)) then
+				BCS.ShowOverlayWidget(true)
+			else
+				BCS.ShowOverlayWidget(false)
+			end
+		end	
+	end
+end
 
 -- [[
 	-- > This here is the function that initializes the whole Building Cost System
@@ -970,70 +1025,7 @@ BCS.InitializeBuildingCostSystem = function()
 		BCS.PlacementUpdate = GUI_Construction.PlacementUpdate;
 	end	
 	GUI_Construction.PlacementUpdate = function()	
-		
-		if g_LastPlacedParam == false then --Road
-		
-			if (BCS.RoadCosts ~= nil) then
-				if not BCS.AreResourcesAvailable(1, BCS.RoadMultiplier.First, BCS.RoadMultiplier.Second)
-				and (BCS.StreetMultiplier.CurrentX ~= 1 and BCS.StreetMultiplier.CurrentY ~= 1) then
-					BCS.ShowOverlayWidget(true)
-				else
-					BCS.ShowOverlayWidget(false)
-				end
-			end	
-			
-		elseif g_LastPlacedParam == true then --Trail
-		
-			if (BCS.TrailCosts ~= nil) then
-				local First, Second = BCS.CalculateStreetCosts()
-				
-				GUI_Tooltip.TooltipCostsOnly({BCS.TrailCosts[1], First, BCS.TrailCosts[3], Second})
-				XGUIEng.ShowWidget("/InGame/Root/Normal/TooltipCostsOnly", 1)
-				BCS.StreetMultiplier.First = First
-				BCS.StreetMultiplier.Second = Second
-				
-				if not BCS.AreResourcesAvailable(4, First, Second)
-				and (BCS.StreetMultiplier.CurrentX ~= 1 and BCS.StreetMultiplier.CurrentY ~= 1) then
-					BCS.ShowOverlayWidget(true)
-				else
-					BCS.ShowOverlayWidget(false)
-				end
-			end
-			
-		elseif g_LastPlacedParam == UpgradeCategories.PalisadeSegment then 
-		
-			if BCS.PalisadeCosts ~= nil then
-				local Costs = {Logic.GetCostForWall(Entities.B_PalisadeSegment, Entities.B_PalisadeTurret, StartTurretX, StartTurretY, EndTurretX, EndTurretY)}
-				if not BCS.AreResourcesAvailable(3, Costs[2], Costs[4]) and (StartTurretX ~= 1 and StartTurretY ~= 1) then
-					BCS.ShowOverlayWidget(true)
-				else
-					BCS.ShowOverlayWidget(false)
-				end	
-			end	
-			
-		elseif g_LastPlacedParam == GetUpgradeCategoryForClimatezone("WallSegment") then
-		
-			if BCS.WallCosts ~= nil then -- Just check for ME since all climate zones have the same costs anyway
-				local Costs = {Logic.GetCostForWall(Entities.B_WallSegment_ME, Entities.B_WallTurret_ME, StartTurretX, StartTurretY, EndTurretX, EndTurretY)}
-				if not BCS.AreResourcesAvailable(2, Costs[2], Costs[4]) and (StartTurretX ~= 1 and StartTurretY ~= 1) then
-					BCS.ShowOverlayWidget(true)
-				else
-					BCS.ShowOverlayWidget(false)
-				end	
-			end
-			
-		else
-		
-			if (BCS.GetAwaitingVariable() == true) then
-				if not (BCS.AreResourcesAvailable(g_LastPlacedParam)) then
-					BCS.ShowOverlayWidget(true)
-				else
-					BCS.ShowOverlayWidget(false)
-				end
-			end	
-			
-		end
-		
+		BCS.HandlePlacementModeUpdate(g_LastPlacedParam)
 		BCS.PlacementUpdate()	
 	end
 	
@@ -1041,34 +1033,12 @@ BCS.InitializeBuildingCostSystem = function()
 		BCS.GameCallback_GUI_PlacementState = GameCallback_GUI_PlacementState;
 	end	
 	GameCallback_GUI_PlacementState = function(_State, _Type)
-		--Message(_State.." - ".._Type) 
-		
 		-- _Type = Building, Road, Wall, ...
 		-- _State = Current Blocking State
 		
 		--This is needed because for some reason the Wall/Palisade Continue State does not call PlacementUpdate ?
 		if BCS.IsInWallOrPalisadeContinueState == true then
-		
-			if g_LastPlacedParam == UpgradeCategories.PalisadeSegment then --Palisade
-				if BCS.PalisadeCosts ~= nil then
-					local Costs = {Logic.GetCostForWall(Entities.B_PalisadeSegment, Entities.B_PalisadeTurret, StartTurretX, StartTurretY, EndTurretX, EndTurretY)}
-					if not BCS.AreResourcesAvailable(3, Costs[2], Costs[4]) and (StartTurretX ~= 1 and StartTurretY ~= 1) then
-						BCS.ShowOverlayWidget(true)
-					else
-						BCS.ShowOverlayWidget(false)
-					end	
-				end	
-			elseif g_LastPlacedParam == GetUpgradeCategoryForClimatezone("WallSegment") then
-				if BCS.WallCosts ~= nil then
-					local Costs = {Logic.GetCostForWall(Entities.B_WallSegment_ME, Entities.B_WallTurret_ME, StartTurretX, StartTurretY, EndTurretX, EndTurretY)}
-					if not BCS.AreResourcesAvailable(2, Costs[2], Costs[4]) and (StartTurretX ~= 1 and StartTurretY ~= 1) then
-						BCS.ShowOverlayWidget(true)
-					else
-						BCS.ShowOverlayWidget(false)
-					end	
-				end
-			end
-			
+			BCS.HandlePlacementModeUpdate(g_LastPlacedParam)
 		end
 		BCS.GameCallback_GUI_PlacementState(_State, _Type)
 	end
