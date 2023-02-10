@@ -75,19 +75,17 @@ function SetMyBuildingCosts()
 	BCS.EditBuildingCosts(UpgradeCategories.SheepPasture, 8, Goods.G_Medicine, 6)
 	BCS.EditBuildingCosts(UpgradeCategories.BeeHive, 8, Goods.G_Herb, 8)
 	--Palisade/Wall - Gates
-	BCS.EditBuildingCosts(UpgradeCategories.PalisadeGate, 10, Goods.G_Dye, 6)
-	BCS.EditBuildingCosts(UpgradeCategories.WallGate_SouthEurope, 16, Goods.G_Olibanum, 6) --Replace SouthEurope with your climate zone! / Ersetze SouthEurope mit deiner derzeitigen Klimazone!
+	BCS.EditBuildingCosts(UpgradeCategories.PalisadeGate, 10, Goods.G_Herb, 6)
+	BCS.EditBuildingCosts(UpgradeCategories.WallGate_SouthEurope, 16, Goods.G_Grain, 6) --Replace SouthEurope with your climate zone! / Ersetze SouthEurope mit deiner derzeitigen Klimazone!
 	--Buildings without fixed cost
-	BCS.EditWallCosts(4.2, Goods.G_Grain, 3) --Wallcosts/Mauerkosten
-	BCS.EditPalisadeCosts(3.5, Goods.G_Gems, 5) --Palisadecosts/Palisadenkosten
+	BCS.EditWallCosts(3.2, Goods.G_Grain, 2.7) --Wallcosts/Mauerkosten
+	BCS.EditPalisadeCosts(3.5, Goods.G_Carcass, 1.2) --Palisadecosts/Palisadenkosten
 	BCS.EditRoadCosts(3, Goods.G_Leather, 1.8) --Roadcosts/Straßenkosten
-	BCS.EditTrailCosts(Goods.G_Herb, 1.5, Goods.G_Sausage, 1) --Streetcosts/Wegkosten
+	BCS.EditTrailCosts(Goods.G_Herb, 1.5, Goods.G_Sausage, 1.1) --Streetcosts/Wegkosten
 	
 	BCS.EditFestivalCosts(1.5, Goods.G_Sausage, 15) --Festivalcosts/Festkosten
 	--The first arguments here are multiplicators, that means: 1.5 -> 1.5 times the original cost
 	--Die ersten Argumente hier sind Multiplikatoren, heißt: 1.5 -> 1.5 mal den Originalbetrag
-	
-	BCS.ActivateHuntableAnimals(true) --The hunter can hunt lifestock as well! / Der Jäger kann auch Weidetiere jagen!
 	
 	--[[
 	
