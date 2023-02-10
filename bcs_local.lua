@@ -538,7 +538,6 @@ BCS.OverwriteAfterPlacement = function()
     GameCallback_GUI_AfterWallGatePlacement = function()
 		if (BCS.GetAwaitingVariable() == true) then
 			local AmountOfTypes, FirstBuildingType = Logic.GetBuildingTypesInUpgradeCategory(g_LastPlacedParam)
-			GUI.AddNote(FirstBuildingType)
 			BCS.CurrentExpectedBuildingType = FirstBuildingType
 			
 			BCS.RemoveCostsFromOutStock(g_LastPlacedParam);
