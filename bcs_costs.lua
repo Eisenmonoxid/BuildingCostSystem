@@ -78,8 +78,8 @@ function SetMyBuildingCosts()
 	BCS.EditBuildingCosts(UpgradeCategories.PalisadeGate, 10, Goods.G_Herb, 6)
 	BCS.EditBuildingCosts(UpgradeCategories.WallGate_SouthEurope, 16, Goods.G_Grain, 6) --Replace SouthEurope with your climate zone! / Ersetze SouthEurope mit deiner derzeitigen Klimazone!
 	--Buildings without fixed cost
-	BCS.EditWallCosts(3.2, Goods.G_Grain, 2.7) --Wallcosts/Mauerkosten
-	BCS.EditPalisadeCosts(3.5, Goods.G_Carcass, 1.2) --Palisadecosts/Palisadenkosten
+	BCS.EditWallCosts(3.2, Goods.G_Grain, 2.7) --Wallcosts/Mauerkosten (!NO REFUND)
+	BCS.EditPalisadeCosts(3.5, Goods.G_Carcass, 1.2) --Palisadecosts/Palisadenkosten (!NO REFUND)
 	BCS.EditRoadCosts(3, Goods.G_Leather, 1.8) --Roadcosts/Straßenkosten
 	BCS.EditTrailCosts(Goods.G_Herb, 1.5, Goods.G_Sausage, 1.1) --Streetcosts/Wegkosten
 	

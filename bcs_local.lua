@@ -129,9 +129,23 @@ BCS.SetCountGoodsOnMarketplace = function(_flag)
 	BCS.MarketplaceGoodsCount = _flag
 end
 
-----------------------------------------------------------------------------------------------------------------------
---These functions are used internally and should not be called by the User--------------------------------------------
-----------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------------------------------------------------
+--[[
+		The following methods handle the table management. There are two main tables used: 
+		'BCS.BuildingCosts' and 'BCS.BuildingIDTable'.
+		
+		The first one is used to store every UpgradeCategory and the corresponding new costs.
+		The second one stores every individual entityID with the costs that were used to build the entity.
+		
+		This second table allows us to refund the costs for every building individually, even if the costs
+		of the corresponding UpgradeCategory were changed or reset in the meantime.
+		
+		Since Walls and Palisades can be made up of multiple segments and currently we have no way of getting
+		every worker, refund for those is disabled.
+		
+		WallGates and PalisadeGates should work fine though.
+]]--
+-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 BCS.GetCostByCostTable = function(_buildingType)
 	if _buildingType == nil or _buildingType == 0 then
@@ -482,9 +496,12 @@ BCS.GetCurrentlyGlobalBuilding = function(_EntityID)
 		if Type == BCS.CurrentExpectedBuildingType then
 			
 			if Logic.IsWallSegment(WorkPlaceID) then
-				BCS.ResetWallTurretPositions()
+				Framework.WriteToLog("BCS: Job " ..tostring(_EntityID) .. " finished! Reason: Building was a Wall Segment and we don't refund those: " ..tostring(WorkPlaceID))
+				BCS.CurrentExpectedBuildingType = nil
+				return true;
+			else
+				BCS.AddBuildingToIDTable(WorkPlaceID)
 			end
-			BCS.AddBuildingToIDTable(WorkPlaceID)
 			BCS.CurrentExpectedBuildingType = nil
 		
 			Framework.WriteToLog("BCS: Job " ..tostring(_EntityID) .. " finished! Reason: Building Added To ID Table: " ..tostring(WorkPlaceID))
@@ -662,24 +679,6 @@ BCS.OverwriteBuildClicked = function()
 		BCS.IsInWallOrPalisadeContinueState = true
 		
 		BCS.ContinueWallClicked()
-	end
-end
-BCS.OverwriteBuildAbort = function()
-	if BCS.ConstructWallAbort == nil then
-		BCS.ConstructWallAbort = GameCallBack_GUI_ConstructWallAbort;
-	end	
-	GameCallBack_GUI_ConstructWallAbort = function()
-		BCS.ResetWallTurretPositions()
-		BCS.IsInWallOrPalisadeContinueState = false
-		BCS.ConstructWallAbort()
-	end
-	
-	if BCS.ConstructRoadAbort == nil then
-		BCS.ConstructRoadAbort = GameCallback_GUI_ConstructRoadAbort;
-	end	
-	GameCallback_GUI_ConstructRoadAbort = function()
-		BCS.ResetTrailAndRoadCosts()
-		BCS.ConstructRoadAbort()
 	end
 end
 
@@ -1012,7 +1011,6 @@ BCS.InitializeBuildingCostSystem = function()
 
 	BCS.OverwriteAfterPlacement()
 	BCS.OverwriteBuildClicked()
-	BCS.OverwriteBuildAbort()
 	BCS.OverwriteGetCostLogics()
 	BCS.OverwriteVariableCostBuildings()
 	BCS.OverwriteEndScreenCallback()
@@ -1051,6 +1049,8 @@ BCS.InitializeBuildingCostSystem = function()
 		BCS.GUI_StateChanged(_StateNameID, _Armed)
 		
 		BCS.ShowOverlayWidget(false)		
+		BCS.ResetTrailAndRoadCosts()
+		BCS.ResetWallTurretPositions()
 		-- TODO: What happens when the player switches from e.g. PlaceBuilding into PlaceBuilding? 
 		-- Does this case work too?
 		-- CAN'T HAPPEN because all Building functions call GUI.CancelState() which should set the state to selection?
@@ -1060,7 +1060,7 @@ BCS.InitializeBuildingCostSystem = function()
 			and (_StateNameID ~= GUI.GetStateNameByID("PlaceWall"))
 			and (_StateNameID ~= GUI.GetStateNameByID("PlaceRoad"))) then
 				BCS.SetAwaitingVariable(false)
-				BCS.ResetTrailAndRoadCosts()
+				BCS.IsInWallOrPalisadeContinueState = false
 				GUI.SendScriptCommand([[BCS.AreBuildingCostsAvailable = nil]])
 		end
 	end
@@ -1148,7 +1148,6 @@ BCS.OverwriteEndScreenCallback = function()
 	end	
 	EndScreen_ExitGame = function()
 		GUI.CancelState()
-		BCS.ResetWallTurretPositions()
 		Message(XGUIEng.GetStringTableText("Feedback_TextLines/TextLine_NotEnough_Resources"))
 		Framework.WriteToLog("BCS: Resources Ran Out!")
 	end
