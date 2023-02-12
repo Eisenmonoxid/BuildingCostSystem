@@ -1049,7 +1049,7 @@ end
 
 BCS.IsCurrentStateABuildingState = function(_StateNameID)
 	local CurrentStateID = _StateNameID
-	GUI.AddNote(_StateNameID.." - "..GUI.GetStateNameByID("PlaceBuilding"))
+
 	if ((CurrentStateID == GUI.GetStateNameByID("PlaceBuilding")) 
 		or (CurrentStateID == GUI.GetStateNameByID("PlaceWallGate"))
 		or (CurrentStateID == GUI.GetStateNameByID("PlaceWall"))
@@ -1114,9 +1114,9 @@ BCS.InitializeBuildingCostSystem = function()
 		-- CAN'T HAPPEN because all Building functions call GUI.CancelState() which should set the state to selection?
 		-- I Guess ;)
 		if BCS.IsCurrentStateABuildingState(_StateNameID) == false then
-				BCS.SetAwaitingVariable(false)
-				BCS.IsInWallOrPalisadeContinueState = false
-				GUI.SendScriptCommand([[BCS.AreBuildingCostsAvailable = nil]])
+			BCS.SetAwaitingVariable(false)
+			BCS.IsInWallOrPalisadeContinueState = false
+			GUI.SendScriptCommand([[BCS.AreBuildingCostsAvailable = nil]])
 		end
 	end
 
