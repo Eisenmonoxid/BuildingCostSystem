@@ -471,7 +471,7 @@ BCS.GetEntityIDToAddToOutStock = function(_goodType)
 	return nil
 end
 
-BCS.GetCurrentlyGlobalBuilding = function(_EntityID)
+BCS.GetLastPlacedBuildingIDForKnockDown = function(_EntityID)
 	Framework.WriteToLog("BCS: Job "..tostring(_EntityID).." Created!")
 	-- Are we even waiting on something?
 	if BCS.CurrentExpectedBuildingType == nil then
@@ -497,14 +497,12 @@ BCS.GetCurrentlyGlobalBuilding = function(_EntityID)
 			
 			if Logic.IsWallSegment(WorkPlaceID) then
 				Framework.WriteToLog("BCS: Job " ..tostring(_EntityID) .. " finished! Reason: Building was a Wall Segment and we don't refund those: " ..tostring(WorkPlaceID))
-				BCS.CurrentExpectedBuildingType = nil
-				return true;
 			else
 				BCS.AddBuildingToIDTable(WorkPlaceID)
+				Framework.WriteToLog("BCS: Job " ..tostring(_EntityID) .. " finished! Reason: Building Added To ID Table: " ..tostring(WorkPlaceID))
 			end
+			
 			BCS.CurrentExpectedBuildingType = nil
-		
-			Framework.WriteToLog("BCS: Job " ..tostring(_EntityID) .. " finished! Reason: Building Added To ID Table: " ..tostring(WorkPlaceID))
 			return true;
 		else
 			Framework.WriteToLog("BCS: Job " ..tostring(_EntityID) .. " finished! Reason: CurrentExpectedBuildingType ~= WorkplaceID-Type!")
@@ -679,6 +677,43 @@ BCS.OverwriteBuildClicked = function()
 		BCS.IsInWallOrPalisadeContinueState = true
 		
 		BCS.ContinueWallClicked()
+	end
+	
+	if BCS.ContinueWallMouseOver == nil then
+		BCS.ContinueWallMouseOver = GUI_BuildingButtons.ContinueWallMouseOver;
+	end	
+	GUI_BuildingButtons.ContinueWallMouseOver = function()
+		local TurretID = GUI.GetSelectedEntity()
+		local WeaponSlotID = Logic.GetWeaponHolder(TurretID)
+
+		if WeaponSlotID ~= nil then
+			TurretID = WeaponSlotID
+		end
+
+		local TurretType = Logic.GetEntityType(TurretID)
+		local Costs
+		local TooltipTextKey
+
+		if TurretType == Entities.B_PalisadeTurret
+        or TurretType == Entities.B_PalisadeGate_Turret_L
+        or TurretType == Entities.B_PalisadeGate_Turret_R then
+			TooltipTextKey = "ContinuePalisade"
+		
+			if BCS.PalisadeCosts ~= nil then
+				Costs = {BCS.PalisadeCosts[1], -1, BCS.PalisadeCosts[3], -1}	
+			else
+				Costs = {Goods.G_Wood, -1}
+			end
+		else
+			TooltipTextKey = "ContinueWall"
+			if BCS.WallCosts ~= nil then
+				Costs = {BCS.WallCosts[1], -1, BCS.WallCosts[3], -1}	
+			else
+				Costs = {Goods.G_Stone, -1}
+			end
+		end
+		
+		GUI_Tooltip.TooltipBuy(Costs, TooltipTextKey)
 	end
 end
 
@@ -1105,7 +1140,7 @@ BCS.InitializeBuildingCostSystem = function()
 				if (Logic.IsEntityInCategory(_EntityID, EntityCategories.Worker) == 1) 
 				or (Logic.GetEntityType(_EntityID) == Entities.U_OutpostConstructionWorker) 
 				or (Logic.GetEntityType(_EntityID) == Entities.U_WallConstructionWorker) then
-					Logic.ExecuteInLuaLocalState("StartSimpleHiResJobEx(BCS.GetCurrentlyGlobalBuilding, ".._EntityID..")")
+					Logic.ExecuteInLuaLocalState("StartSimpleHiResJobEx(BCS.GetLastPlacedBuildingIDForKnockDown, ".._EntityID..")")
 				end
 			end
 		end	
@@ -1241,9 +1276,18 @@ end
 BCS.EnsureQuestSystemBehaviorCompatibility = function()
 	if (API and QSB) and not BCS.EnsuredQuestSystemBehaviorCompatibility then
 		if QSB.ScriptEvents ~= nil then
+			-- When briefing ends, reset the Endscreen_Exit function correctly
 			API.AddScriptEventListener(QSB.ScriptEvents.BriefingEnded, BCS.OverwriteEndScreenCallback)
-			BCS.EnsuredQuestSystemBehaviorCompatibility = true
 		end
+		if API.AddSaveGameAction then
+			-- Register Savegame
+			GUI.SendScriptCommand([[
+				API.AddSaveGameAction(function()
+					Logic.ExecuteInLuaLocalState('BCS.InitializeBuildingCostSystem()')
+				end)
+			]])
+		end
+		BCS.EnsuredQuestSystemBehaviorCompatibility = true
 	end
 end
 
