@@ -37,13 +37,11 @@ EndTurretX = 1
 EndTurretY = 1
 
 BCS.CurrentFestivalCosts = nil
-BCS.HuntableAnimals = false
-BCS.HunterButtonID = nil
 
 BCS.OverlayWidget = "/EndScreen"
 BCS.OverlayIsCurrentlyShown = false
 BCS.EnsuredQuestSystemBehaviorCompatibility = false
-BCS.CurrentBCSVersion = "3.7 - 08.02.2023 11:26"
+BCS.CurrentBCSVersion = "3.8 - 10.02.2023 18:34"
 
 ----------------------------------------------------------------------------------------------------------------------
 --These functions are exported to Userspace---------------------------------------------------------------------------
@@ -101,7 +99,7 @@ BCS.EditPalisadeCosts = function(_originalCostFactor, _newGood, _newGoodFactor)
 end
 
 BCS.EditTrailCosts = function(_firstGood, _originalCostFactor, _secondGood, _newGoodFactor)
-	if _originalCostFactor == nil then
+	if _firstGood == nil then
 		BCS.TrailCosts = nil
 		return;
 	end
@@ -123,10 +121,6 @@ BCS.EditFestivalCosts = function(_originalCostFactor, _secondGood, _newGoodFacto
 	BCS.CurrentFestivalCosts = {Goods.G_Gold, _originalCostFactor, _secondGood, _newGoodFactor}
 end
 
-BCS.ActivateHuntableAnimals = function(_flag)
-	BCS.HuntableAnimals = _flag
-end
-
 BCS.SetRefundCityGoods = function(_flag)
 	BCS.RefundCityGoods = _flag
 end
@@ -135,9 +129,23 @@ BCS.SetCountGoodsOnMarketplace = function(_flag)
 	BCS.MarketplaceGoodsCount = _flag
 end
 
-----------------------------------------------------------------------------------------------------------------------
---These functions are used internally and should not be called by the User--------------------------------------------
-----------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------------------------------------------------
+--[[
+		The following methods handle the table management. There are two main tables used: 
+		'BCS.BuildingCosts' and 'BCS.BuildingIDTable'.
+		
+		The first one is used to store every UpgradeCategory and the corresponding new costs.
+		The second one stores every individual entityID with the costs that were used to build the entity.
+		
+		This second table allows us to refund the costs for every building individually, even if the costs
+		of the corresponding UpgradeCategory were changed or reset in the meantime.
+		
+		Since Walls and Palisades can be made up of multiple segments and currently we have no way of getting
+		every worker, refund for those is disabled.
+		
+		WallGates and PalisadeGates should work fine though.
+]]--
+-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 BCS.GetCostByCostTable = function(_buildingType)
 	if _buildingType == nil or _buildingType == 0 then
@@ -184,10 +192,11 @@ BCS.GetCostByBuildingIDTable = function(_EntityID)
 	return nil
 end
 
-BCS.AddBuildingToIDTable = function(_EntityID, _upgradeCategory)
-	local AmountOfTypes, FirstBuildingType = Logic.GetBuildingTypesInUpgradeCategory(_upgradeCategory)
-	local FGood, FAmount, SGood, SAmount = Logic.GetEntityTypeFullCost(FirstBuildingType)
-	table.insert(BCS.BuildingIDTable, {_EntityID, FGood, FAmount, SGood, SAmount})
+BCS.AddBuildingToIDTable = function(_EntityID)
+	local FGood, FAmount, SGood, SAmount = Logic.GetEntityTypeFullCost(Logic.GetEntityType(_EntityID))
+	if FGood ~= nil and FGood ~= 0 then
+		table.insert(BCS.BuildingIDTable, {_EntityID, FGood, FAmount, SGood, SAmount})
+	end
 end
 
 ----------------------------------------------------------------------------------------------------------------------
@@ -374,16 +383,17 @@ BCS.AreResourcesAvailable = function(_upgradeCategory, _FGoodAmount, _SGoodAmoun
 end
 
 BCS.RefundKnockDown = function(_entityID)
+	-- WARNING: _entityID is not valid here anymore! DO NOT USE ON GAME FUNCTIONS!
+	-- -> Just used to get the corresponding table index
 	local PlayerID = GUI.GetPlayerID()
-	local CostTable, Type = BCS.GetCostByBuildingIDTable(_entityID) --Normal Building or Wall/PalisadeGate
+	local CostTable, Type = BCS.GetCostByBuildingIDTable(_entityID)
 
 	if CostTable == nil then -- Building has no costs
-		return
+		return;
 	end
 	
 	local IDFirstGood = BCS.GetEntityIDToAddToOutStock(CostTable[2])
 	local IDSecondGood = BCS.GetEntityIDToAddToOutStock(CostTable[4])
-
 	
 	if IDFirstGood == false then -- CityGood
 		if BCS.RefundCityGoods == true then
@@ -461,39 +471,43 @@ BCS.GetEntityIDToAddToOutStock = function(_goodType)
 	return nil
 end
 
-BCS.GetCurrentlyGlobalBuilding = function(_EntityID)
+BCS.GetLastPlacedBuildingIDForKnockDown = function(_EntityID)
 	Framework.WriteToLog("BCS: Job "..tostring(_EntityID).." Created!")
-	local WorkPlaceID = Logic.GetSettlersWorkBuilding(_EntityID)
-	if WorkPlaceID ~= 0 and WorkPlaceID ~= nil then
-		Framework.WriteToLog("BCS: Job "..tostring(_EntityID).." has BuildingType: " ..tostring(Logic.GetEntityType(WorkPlaceID)) .." - Expected: "..tostring(BCS.CurrentExpectedBuildingType))
-		if BCS.CurrentExpectedBuildingType ~= nil and Logic.GetEntityType(WorkPlaceID) == BCS.CurrentExpectedBuildingType then
-			local UpgradeCategory = Logic.GetUpgradeCategoryByBuildingType(Logic.GetEntityType(WorkPlaceID))
-			if UpgradeCategory == g_LastPlacedParam then
-				BCS.AddBuildingToIDTable(WorkPlaceID, UpgradeCategory)
-				BCS.CurrentExpectedBuildingType = nil
-				Framework.WriteToLog("BCS: Job " ..tostring(_EntityID) .. " finished! Reason: Building Added To ID Table: " ..tostring(WorkPlaceID))
-				return true
-			else
-				Framework.WriteToLog("BCS: Job " ..tostring(_EntityID) .. " finished! Reason: UpgradeCategory was not the same as g_LastPlacedParam!")
-				return true
-			end
-		else
-			Framework.WriteToLog("BCS: Job " ..tostring(_EntityID) .. " finished! Reason: CurrentExpectedBuildingType either nil or ~= WorkplaceID-Type!")
-			return true
-		end
+	-- Are we even waiting on something?
+	if BCS.CurrentExpectedBuildingType == nil then
+		Framework.WriteToLog("BCS: Job " ..tostring(_EntityID) .. " finished! Reason: CurrentExpectedBuildingType was nil!")
+		return true;
 	end
 	if not IsExisting(_EntityID) then
 		Framework.WriteToLog("BCS: Job " ..tostring(_EntityID) .. " finished! Reason: Worker Entity was deleted!")
-		return true
+		return true;
 	elseif string.find(Logic.GetEntityTypeName(Logic.GetEntityType(_EntityID)), 'NPC') then
 		Framework.WriteToLog("BCS: Job " ..tostring(_EntityID) .. " finished! Reason: Worker was an NPC - Settler!")
-		return true
+		return true;
 	elseif Logic.GetTaskHistoryEntry(_EntityID, 0) ~= 1 and Logic.GetTaskHistoryEntry(_EntityID, 0) ~= 9 then
 		Framework.WriteToLog("BCS: Job " ..tostring(_EntityID) .. " finished! Reason: TaskHistoryEntry was not 1 or 9 (Just Spawned/BuildingPhase)")
-		return true
-	elseif BCS.CurrentExpectedBuildingType == nil then
-		Framework.WriteToLog("BCS: Job " ..tostring(_EntityID) .. " finished! Reason: CurrentExpectedBuildingType was nil!")
-		return true
+		return true;
+	end
+	-- Here, we expect that a building was being placed recently
+	local WorkPlaceID = Logic.GetSettlersWorkBuilding(_EntityID)
+	if WorkPlaceID ~= 0 and WorkPlaceID ~= nil then
+		local Type = Logic.GetEntityType(WorkPlaceID)
+		Framework.WriteToLog("BCS: Job "..tostring(_EntityID).." has BuildingType: " ..tostring(Type) .." - Expected: "..tostring(BCS.CurrentExpectedBuildingType))	
+		if Type == BCS.CurrentExpectedBuildingType then
+			
+			if Logic.IsWallSegment(WorkPlaceID) then
+				Framework.WriteToLog("BCS: Job " ..tostring(_EntityID) .. " finished! Reason: Building was a Wall Segment and we don't refund those: " ..tostring(WorkPlaceID))
+			else
+				BCS.AddBuildingToIDTable(WorkPlaceID)
+				Framework.WriteToLog("BCS: Job " ..tostring(_EntityID) .. " finished! Reason: Building Added To ID Table: " ..tostring(WorkPlaceID))
+			end
+			
+			BCS.CurrentExpectedBuildingType = nil
+			return true;
+		else
+			Framework.WriteToLog("BCS: Job " ..tostring(_EntityID) .. " finished! Reason: CurrentExpectedBuildingType ~= WorkplaceID-Type!")
+			return true;
+		end
 	end
 end
 
@@ -501,17 +515,15 @@ end
 --Hacking the game functions here-------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------
 
-BCS.HasCurrentBuildingOwnBuildingCosts = function(_BuildingType)
-	local CostTable = BCS.GetCostByCostTable(_BuildingType)
+BCS.HasCurrentBuildingOwnBuildingCosts = function(_upgradeCategory)
+	local CostTable = BCS.GetCostByCostTable(_upgradeCategory)
 	if (CostTable == nil) then
 		BCS.SetAwaitingVariable(false)
-		BCS.CurrentExpectedBuildingType = nil
 	else
-		local AmountOfTypes, FirstBuildingType = Logic.GetBuildingTypesInUpgradeCategory(_BuildingType)
-		BCS.CurrentExpectedBuildingType = FirstBuildingType
 		BCS.SetAwaitingVariable(true)
 		Framework.WriteToLog("BCS: Building Custom with Type: "..tostring(FirstBuildingType))
 	end
+	BCS.CurrentExpectedBuildingType = nil
 end
 BCS.SetAwaitingVariable = function(_isAwaiting)
 	BCS.IsCurrentBuildingInCostTable = _isAwaiting
@@ -526,6 +538,9 @@ BCS.OverwriteAfterPlacement = function()
 	end
     GameCallback_GUI_AfterBuildingPlacement = function()
 		if (BCS.GetAwaitingVariable() == true) then
+			local AmountOfTypes, FirstBuildingType = Logic.GetBuildingTypesInUpgradeCategory(g_LastPlacedParam)
+			BCS.CurrentExpectedBuildingType = FirstBuildingType
+			
 			BCS.RemoveCostsFromOutStock(g_LastPlacedParam)
 			BCS.SetAwaitingVariable(false)
 		end
@@ -537,6 +552,9 @@ BCS.OverwriteAfterPlacement = function()
 	end
     GameCallback_GUI_AfterWallGatePlacement = function()
 		if (BCS.GetAwaitingVariable() == true) then
+			local AmountOfTypes, FirstBuildingType = Logic.GetBuildingTypesInUpgradeCategory(g_LastPlacedParam)
+			BCS.CurrentExpectedBuildingType = FirstBuildingType
+			
 			BCS.RemoveCostsFromOutStock(g_LastPlacedParam);
 			BCS.SetAwaitingVariable(false)
 		end
@@ -567,15 +585,18 @@ BCS.OverwriteAfterPlacement = function()
     GameCallback_GUI_AfterWallPlacement = function()
 		if g_LastPlacedParam == UpgradeCategories.PalisadeSegment then --Palisade
 			if (BCS.PalisadeCosts ~= nil) then
+				local AmountOfTypes, FirstBuildingType = Logic.GetBuildingTypesInUpgradeCategory(g_LastPlacedParam)
+				BCS.CurrentExpectedBuildingType = FirstBuildingType
 				BCS.RemoveVariableCostsFromOutStock(1)
 			end
 		elseif g_LastPlacedParam == GetUpgradeCategoryForClimatezone("WallSegment") then --Wall
 			if (BCS.WallCosts ~= nil) then
+				local AmountOfTypes, FirstBuildingType = Logic.GetBuildingTypesInUpgradeCategory(g_LastPlacedParam)
+				BCS.CurrentExpectedBuildingType = FirstBuildingType
 				BCS.RemoveVariableCostsFromOutStock(2)
 			end
 		end
 		
-		BCS.ResetWallTurretPositions()
 		BCS.IsInWallOrPalisadeContinueState = false
         BCS.GameCallback_GUI_AfterWallPlacement();
     end
@@ -657,28 +678,46 @@ BCS.OverwriteBuildClicked = function()
 		
 		BCS.ContinueWallClicked()
 	end
-end
-BCS.OverwriteBuildAbort = function()
-	if BCS.ConstructWallAbort == nil then
-		BCS.ConstructWallAbort = GameCallBack_GUI_ConstructWallAbort;
-	end	
-	GameCallBack_GUI_ConstructWallAbort = function()
-		BCS.ResetWallTurretPositions()
-		BCS.IsInWallOrPalisadeContinueState = false
-		BCS.ConstructWallAbort()
-	end
 	
-	if BCS.ConstructRoadAbort == nil then
-		BCS.ConstructRoadAbort = GameCallback_GUI_ConstructRoadAbort;
+	if BCS.ContinueWallMouseOver == nil then
+		BCS.ContinueWallMouseOver = GUI_BuildingButtons.ContinueWallMouseOver;
 	end	
-	GameCallback_GUI_ConstructRoadAbort = function()
-		BCS.ResetTrailAndRoadCosts()
-		BCS.ConstructRoadAbort()
+	GUI_BuildingButtons.ContinueWallMouseOver = function()
+		local TurretID = GUI.GetSelectedEntity()
+		local WeaponSlotID = Logic.GetWeaponHolder(TurretID)
+
+		if WeaponSlotID ~= nil then
+			TurretID = WeaponSlotID
+		end
+
+		local TurretType = Logic.GetEntityType(TurretID)
+		local Costs
+		local TooltipTextKey
+
+		if TurretType == Entities.B_PalisadeTurret
+        or TurretType == Entities.B_PalisadeGate_Turret_L
+        or TurretType == Entities.B_PalisadeGate_Turret_R then
+			TooltipTextKey = "ContinuePalisade"
+		
+			if BCS.PalisadeCosts ~= nil then
+				Costs = {BCS.PalisadeCosts[1], -1, BCS.PalisadeCosts[3], -1}	
+			else
+				Costs = {Goods.G_Wood, -1}
+			end
+		else
+			TooltipTextKey = "ContinueWall"
+			if BCS.WallCosts ~= nil then
+				Costs = {BCS.WallCosts[1], -1, BCS.WallCosts[3], -1}	
+			else
+				Costs = {Goods.G_Stone, -1}
+			end
+		end
+		
+		GUI_Tooltip.TooltipBuy(Costs, TooltipTextKey)
 	end
 end
 
 BCS.OverwriteGetCostLogics = function()
-
 	if BCS.GetEntityTypeFullCost == nil then
 		BCS.GetEntityTypeFullCost = Logic.GetEntityTypeFullCost;
 	end	
@@ -695,23 +734,19 @@ BCS.OverwriteGetCostLogics = function()
 	if BCS.GetCostForWall == nil then
 		BCS.GetCostForWall = Logic.GetCostForWall;
 	end	
-	Logic.GetCostForWall = function(_SegmentType, _TurretType, StartTurretX, StartTurretY, EndTurretX, EndTurretY)
-		--113 110 --Palisade Entities.B_PalisadeSegment, Entities.B_PalisadeTurret
-		--140 141 --Wall_ME Entities.B_WallSegment_ME, Entities.B_WallTurret_ME,
-		--Using Wall_ME since all Walls have the same costs anyway so no reason to differentiate between climate zones
-		
+	Logic.GetCostForWall = function(_SegmentType, _TurretType, _StartTurretX, _StartTurretY, _EndTurretX, _EndTurretY)
 		if _SegmentType == Entities.B_PalisadeSegment and _TurretType == Entities.B_PalisadeTurret then -- Palisade
 			if (BCS.PalisadeCosts == nil) then
-				return BCS.GetCostForWall(_SegmentType, _TurretType, StartTurretX, StartTurretY, EndTurretX, EndTurretY)
+				return BCS.GetCostForWall(_SegmentType, _TurretType, _StartTurretX, _StartTurretY, _EndTurretX, _EndTurretY)
 			else
-				local Distance = BCS.CalculateVariableCosts(StartTurretX, StartTurretY, EndTurretX, EndTurretY)
+				local Distance = BCS.CalculateVariableCosts(_StartTurretX, _StartTurretY, _EndTurretX, _EndTurretY)
 				return BCS.PalisadeCosts[1], math.floor(Distance*BCS.PalisadeCosts[2]), BCS.PalisadeCosts[3], math.floor(Distance*BCS.PalisadeCosts[4])
 			end	
 		else -- Wall
 			if (BCS.WallCosts == nil) then
-				return BCS.GetCostForWall(_SegmentType, _TurretType, StartTurretX, StartTurretY, EndTurretX, EndTurretY)
+				return BCS.GetCostForWall(_SegmentType, _TurretType, _StartTurretX, _StartTurretY, _EndTurretX, _EndTurretY)
 			else
-				local Distance = BCS.CalculateVariableCosts(StartTurretX, StartTurretY, EndTurretX, EndTurretY)
+				local Distance = BCS.CalculateVariableCosts(_StartTurretX, _StartTurretY, _EndTurretX, _EndTurretY)
 				return BCS.WallCosts[1], math.floor(Distance*BCS.WallCosts[2]), BCS.WallCosts[3], math.floor(Distance*BCS.WallCosts[4])
 			end		
 		end
@@ -1011,7 +1046,6 @@ BCS.InitializeBuildingCostSystem = function()
 
 	BCS.OverwriteAfterPlacement()
 	BCS.OverwriteBuildClicked()
-	BCS.OverwriteBuildAbort()
 	BCS.OverwriteGetCostLogics()
 	BCS.OverwriteVariableCostBuildings()
 	BCS.OverwriteEndScreenCallback()
@@ -1050,6 +1084,8 @@ BCS.InitializeBuildingCostSystem = function()
 		BCS.GUI_StateChanged(_StateNameID, _Armed)
 		
 		BCS.ShowOverlayWidget(false)		
+		BCS.ResetTrailAndRoadCosts()
+		BCS.ResetWallTurretPositions()
 		-- TODO: What happens when the player switches from e.g. PlaceBuilding into PlaceBuilding? 
 		-- Does this case work too?
 		-- CAN'T HAPPEN because all Building functions call GUI.CancelState() which should set the state to selection?
@@ -1059,8 +1095,7 @@ BCS.InitializeBuildingCostSystem = function()
 			and (_StateNameID ~= GUI.GetStateNameByID("PlaceWall"))
 			and (_StateNameID ~= GUI.GetStateNameByID("PlaceRoad"))) then
 				BCS.SetAwaitingVariable(false)
-				BCS.ResetWallTurretPositions()
-				BCS.ResetTrailAndRoadCosts()
+				BCS.IsInWallOrPalisadeContinueState = false
 				GUI.SendScriptCommand([[BCS.AreBuildingCostsAvailable = nil]])
 		end
 	end
@@ -1071,7 +1106,6 @@ BCS.InitializeBuildingCostSystem = function()
 	AreCostsAffordable = function(_Costs, _GoodsInSettlementBoolean)
 		if (BCS.GetAwaitingVariable() == true) then
 			if (BCS.AreResourcesAvailable(g_LastPlacedParam) == false) then
-				BCS.CurrentExpectedBuildingType = nil
 				BCS.SetAwaitingVariable(false)
 				return false, XGUIEng.GetStringTableText("Feedback_TextLines/TextLine_NotEnough_Resources")
 			else
@@ -1106,12 +1140,7 @@ BCS.InitializeBuildingCostSystem = function()
 				if (Logic.IsEntityInCategory(_EntityID, EntityCategories.Worker) == 1) 
 				or (Logic.GetEntityType(_EntityID) == Entities.U_OutpostConstructionWorker) 
 				or (Logic.GetEntityType(_EntityID) == Entities.U_WallConstructionWorker) then
-					local WorkPlaceID = Logic.GetSettlersWorkBuilding(_EntityID)
-					if WorkPlaceID ~= 0 and WorkPlaceID ~= nil and Logic.GetUpgradeLevel(_EntityID) > 0 then
-						return;
-					else
-						Logic.ExecuteInLuaLocalState("StartSimpleHiResJobEx(BCS.GetCurrentlyGlobalBuilding, ".._EntityID..")")
-					end
+					Logic.ExecuteInLuaLocalState("StartSimpleHiResJobEx(BCS.GetLastPlacedBuildingIDForKnockDown, ".._EntityID..")")
 				end
 			end
 		end	
@@ -1122,6 +1151,13 @@ BCS.InitializeBuildingCostSystem = function()
 		GameCallback_BuildingDestroyed = function(_EntityID, _PlayerID, _KnockedDown)
 			BCS.GameCallback_BuildingDestroyed(_EntityID, _PlayerID, _KnockedDown)
 			if (_KnockedDown == 1) and (_PlayerID == 1) then
+
+				local IsReachable = CanEntityReachTarget(_PlayerID, Logic.GetStoreHouse(_PlayerID), _EntityID, nil, PlayerSectorTypes.Civil)
+				-- Return nothing in case the building is not reachable
+				if IsReachable == false then
+					return;
+				end
+
 				Logic.ExecuteInLuaLocalState("BCS.RefundKnockDown(".._EntityID..")")
 			end
 		end
@@ -1147,7 +1183,6 @@ BCS.OverwriteEndScreenCallback = function()
 	end	
 	EndScreen_ExitGame = function()
 		GUI.CancelState()
-		BCS.CurrentExpectedBuildingType = nil
 		Message(XGUIEng.GetStringTableText("Feedback_TextLines/TextLine_NotEnough_Resources"))
 		Framework.WriteToLog("BCS: Resources Ran Out!")
 	end
@@ -1241,15 +1276,18 @@ end
 BCS.EnsureQuestSystemBehaviorCompatibility = function()
 	if (API and QSB) and not BCS.EnsuredQuestSystemBehaviorCompatibility then
 		if QSB.ScriptEvents ~= nil then
+			-- When briefing ends, reset the Endscreen_Exit function correctly
 			API.AddScriptEventListener(QSB.ScriptEvents.BriefingEnded, BCS.OverwriteEndScreenCallback)
-			BCS.EnsuredQuestSystemBehaviorCompatibility = true
 		end
-	end
-	
-	if (API and QSB) and (QSB.ScriptEvents ~= nil and ModuleInterfaceCore ~= nil) then
-		BCS.HuntableLifestockHandlerQSBCompatibility()
-	else
-		BCS.HuntableLifestockHandler()
+		if API.AddSaveGameAction then
+			-- Register Savegame
+			GUI.SendScriptCommand([[
+				API.AddSaveGameAction(function()
+					Logic.ExecuteInLuaLocalState('BCS.InitializeBuildingCostSystem()')
+				end)
+			]])
+		end
+		BCS.EnsuredQuestSystemBehaviorCompatibility = true
 	end
 end
 
@@ -1275,12 +1313,14 @@ BCS.FestivalCostsHandler = function()
 			BCS.StartFestivalClicked(_FestivalIndex)
 		else
 			local PlayerID = GUI.GetPlayerID()
-			local CanBuyBoolean = BCS.AreFestivalResourcesAvailable(PlayerID, _FestivalIndex)
 			local MarketID = GUI.GetSelectedEntity()
 	
 			if MarketID ~= Logic.GetMarketplace(PlayerID) then
-				return
+				BCS.StartFestivalClicked(_FestivalIndex)
+				return;
 			end
+			
+			local CanBuyBoolean = BCS.AreFestivalResourcesAvailable(PlayerID, _FestivalIndex)
 
 			if CanBuyBoolean == true then
 				Sound.FXPlay2DSound("ui\\menu_click")
@@ -1332,151 +1372,6 @@ BCS.AreFestivalResourcesAvailable = function(_PlayerID, _FestivalIndex)
 		return true
 	end
 end
-
-BCS.HuntableLifestockHandler = function()
-
-	if BCS.StartSermonClicked == nil then
-		BCS.StartSermonClicked = GUI_BuildingButtons.StartSermonClicked;	
-	end
-	GUI_BuildingButtons.StartSermonClicked = function()		
-		local PlayerID = GUI.GetPlayerID()
-		local EntityID = GUI.GetSelectedEntity()
-		if EntityID == Logic.GetCathedral(PlayerID) then
-			BCS.StartSermonClicked()
-		else
-			if BCS.HuntableAnimals == true then
-				local Type = Logic.GetEntityType(EntityID)
-				if Type == Entities.B_HuntersHut then
-					BCS.HuntableLifestockChangedIndex(EntityID)
-				end
-			end
-		end
-	end
-	
-	if BCS.StartSermonUpdate == nil then
-		BCS.StartSermonUpdate = GUI_BuildingButtons.StartSermonUpdate;	
-	end
-	GUI_BuildingButtons.StartSermonUpdate = function()
-		local PlayerID = GUI.GetPlayerID()
-		local CurrentWidgetID = XGUIEng.GetCurrentWidgetID()
-		local EntityID = GUI.GetSelectedEntity()
-		
-		if EntityID == Logic.GetCathedral(PlayerID) then
-			SetIcon(CurrentWidgetID, {4, 14})
-			BCS.StartSermonUpdate()
-			return;
-		end
-
-		local EntityType = Logic.GetEntityType(EntityID)
-		if EntityType == Entities.B_HuntersHut and BCS.HuntableAnimals == true then
-			XGUIEng.ShowWidget(CurrentWidgetID, 1)
-			XGUIEng.DisableButton(CurrentWidgetID, 0)
-			
-			BCS.HuntableLifestockHandleUpdateButton(CurrentWidgetID, EntityID)	
-		else
-			XGUIEng.ShowWidget(CurrentWidgetID, 0)
-			return;
-		end
-	end
-	
-	if BCS.SetNameAndDescription == nil then
-		BCS.SetNameAndDescription = GUI_Tooltip.SetNameAndDescription;	
-	end
-	GUI_Tooltip.SetNameAndDescription = function(_TooltipNameWidget, _TooltipDescriptionWidget, _OptionalTextKeyName, _OptionalDisabledTextKeyName, _OptionalMissionTextFileBoolean)
-		if BCS.HuntableAnimals == true and (_TooltipNameWidget) == 98 then --StartSermon
-			if Logic.GetEntityType(GUI.GetSelectedEntity()) == Entities.B_HuntersHut then
-				local Entity = GUI.GetSelectedEntity()
-				local HuntCowsAllowed = Logic.GetOptionalHuntableState(Entity, 2)
-				local HuntSheepAllowed = Logic.GetOptionalHuntableState(Entity, 1)
-				local ToolTipText = ""
-				if HuntCowsAllowed == true then
-					ToolTipText = "Kühe"
-				elseif HuntSheepAllowed == true then
-					ToolTipText = "Schafe"
-				else
-					ToolTipText = "keine Weidetiere"
-				end
-				BCS.SetUserTooltip("Jagd auf Weidetiere", "Gebt Schafe und Kühe zur Jagd frei!{cr}{@color:0,128,0,255}Momentan werden "..ToolTipText.." gejagt!", _TooltipNameWidget, _TooltipDescriptionWidget)
-				return;
-			end
-		end
-		BCS.SetNameAndDescription(_TooltipNameWidget, _TooltipDescriptionWidget, _OptionalTextKeyName, _OptionalDisabledTextKeyName, _OptionalMissionTextFileBoolean)
-	end
-end
-
-BCS.HuntableLifestockHandlerQSBCompatibility = function()
-	if BCS.HunterButtonID == nil then
-		BCS.HunterButtonID = API.AddBuildingButton(
-		function(_WidgetID, _BuildingID)
-			BCS.HuntableLifestockChangedIndex(_BuildingID)
-		end,
-		function(_WidgetID, _BuildingID)
-			local HuntCowsAllowed = Logic.GetOptionalHuntableState(_BuildingID, 2)
-			local HuntSheepAllowed = Logic.GetOptionalHuntableState(_BuildingID, 1)
-			local ToolTipText = ""
-			if HuntCowsAllowed == true then
-				ToolTipText = "Kühe"
-			elseif HuntSheepAllowed == true then
-				ToolTipText = "Schafe"
-			else
-				ToolTipText = "keine Weidetiere"
-			end
-			API.SetTooltipCosts("Jagd auf Weidetiere", "Gebt Schafe und Kühe zur Jagd frei!{cr}{@color:0,128,0,255}Momentan werden "..ToolTipText.." gejagt!", "Momentan nicht möglich");
-		end,
-		-- Update
-		function(_WidgetID, _BuildingID)
-			if Logic.GetEntityType(_BuildingID) == Entities.B_HuntersHut and BCS.HuntableAnimals == true then
-				XGUIEng.ShowWidget(_WidgetID, 1)
-				BCS.HuntableLifestockHandleUpdateButton(_WidgetID, _BuildingID)	
-			else
-				XGUIEng.ShowWidget(_WidgetID, 0)	
-			end
-		end);
-	end
-end
-
-BCS.HuntableLifestockHandleUpdateButton = function(_WidgetID, _BuildingID)	
-	local HuntCowsAllowed = Logic.GetOptionalHuntableState(_BuildingID, 2)
-	local HuntSheepAllowed = Logic.GetOptionalHuntableState(_BuildingID, 1)	
-	
-	if HuntCowsAllowed == true then
-		SetIcon(_WidgetID, {4, 1});
-	elseif HuntSheepAllowed == true then
-		SetIcon(_WidgetID, {4, 2});
-	else
-		SetIcon(_WidgetID, {3, 16});			
-	end
-end
-BCS.HuntableLifestockChangedIndex = function(_BuildingID)
-	local HuntCowsAllowed = Logic.GetOptionalHuntableState(_BuildingID, 2)
-	local HuntSheepAllowed = Logic.GetOptionalHuntableState(_BuildingID, 1)
-	
-	if HuntCowsAllowed == true then
-		GUI.SetOptionalHuntableState(_BuildingID, 2, false)
-		GUI.SetOptionalHuntableState(_BuildingID, 1, true)
-		Message("Es werden Schafe gejagt!")
-	elseif HuntSheepAllowed == true then
-		GUI.SetOptionalHuntableState(_BuildingID, 2, false)
-		GUI.SetOptionalHuntableState(_BuildingID, 1, false)
-		Message("Es werden keine Weidetiere gejagt!")
-	else
-		GUI.SetOptionalHuntableState(_BuildingID, 2, true)
-		GUI.SetOptionalHuntableState(_BuildingID, 1, false)
-		Message("Es werden Kühe gejagt!")
-	end
-	Sound.FXPlay2DSound("ui\\menu_click")
-	Framework.WriteToLog("BCS: Changed Huntable Category at Building "..tostring(_BuildingID).."!")
-end
-BCS.SetUserTooltip = function(_Name, _Description, _TooltipNameWidget, _TooltipDescriptionWidget)
-	XGUIEng.SetText(_TooltipNameWidget, "{center}" .. _Name)
-	XGUIEng.SetText(_TooltipDescriptionWidget, "{center}" .. _Description)
-    
-	local Height = XGUIEng.GetTextHeight(_TooltipDescriptionWidget, true)
-	local W, H = XGUIEng.GetWidgetSize(_TooltipDescriptionWidget)
-    
-	XGUIEng.SetWidgetSize(_TooltipDescriptionWidget, W, Height)
-end
-
 
 --Simplify HiRes Usage--
 if StartSimpleHiResJobEx == nil then

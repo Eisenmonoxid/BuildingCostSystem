@@ -10,7 +10,7 @@ After you've loaded the file you call `BCS.InitializeBuildingCostSystem()` . Aft
 ### Features
 
 - Most buildings in the game can have new costs (see the exact possibilities and limitations in the `bcs_costs.lua` file).
-- Walls, Roads, Trails and Palisades can use the new costs.
+- Walls, Roads, Trails and Palisades can use the new costs too.
 - Festivals can have own costs.
 - The hunter can hunt farm animals (Cows, Sheep).
 - A few minor bug fixes in the game.
