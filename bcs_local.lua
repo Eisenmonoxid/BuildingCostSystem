@@ -607,7 +607,9 @@ BCS.OverwriteBuildClicked = function()
 		BCS.BuildClicked = GUI_Construction.BuildClicked;
 	end	
 	GUI_Construction.BuildClicked = function(_BuildingType)
-		GUI.CancelState()
+		if BCS.IsCurrentStateABuildingState(GUI.GetCurrentStateID()) == true then
+			GUI.CancelState()
+		end
 		BCS.HasCurrentBuildingOwnBuildingCosts(_BuildingType)
 		g_LastPlacedParam = _BuildingType
 		BCS.IsInWallOrPalisadeContinueState = false
@@ -618,10 +620,12 @@ BCS.OverwriteBuildClicked = function()
 		BCS.BuildWallClicked = GUI_Construction.BuildWallClicked;
 	end	
 	GUI_Construction.BuildWallClicked = function(_BuildingType)
+		if BCS.IsCurrentStateABuildingState(GUI.GetCurrentStateID()) == true then
+			GUI.CancelState()
+		end
 	    if _BuildingType == nil then
 			_BuildingType = GetUpgradeCategoryForClimatezone("WallSegment")
 		end
-		GUI.CancelState()
 		BCS.ResetWallTurretPositions()
 		g_LastPlacedParam = _BuildingType
 		BCS.IsInWallOrPalisadeContinueState = false
@@ -632,10 +636,12 @@ BCS.OverwriteBuildClicked = function()
 		BCS.BuildWallGateClicked = GUI_Construction.BuildWallGateClicked;
 	end	
 	GUI_Construction.BuildWallGateClicked = function(_BuildingType)
+		if BCS.IsCurrentStateABuildingState(GUI.GetCurrentStateID()) == true then
+			GUI.CancelState()
+		end
 	    if _BuildingType == nil then
 			_BuildingType = GetUpgradeCategoryForClimatezone("WallGate")
 		end
-		GUI.CancelState()
 		BCS.HasCurrentBuildingOwnBuildingCosts(_BuildingType)
 		g_LastPlacedParam = _BuildingType
 		BCS.IsInWallOrPalisadeContinueState = false
@@ -646,11 +652,13 @@ BCS.OverwriteBuildClicked = function()
 		BCS.BuildStreetClicked = GUI_Construction.BuildStreetClicked;
 	end	
 	GUI_Construction.BuildStreetClicked = function(_IsTrail)
+		if BCS.IsCurrentStateABuildingState(GUI.GetCurrentStateID()) == true then
+			GUI.CancelState()
+		end
 		BCS.ResetTrailAndRoadCosts()
 	    if _IsTrail == nil then
 			_IsTrail = false
 		end
-		GUI.CancelState()
 		BCS.SetAwaitingVariable(false)
 		g_LastPlacedParam = _IsTrail
 		BCS.IsInWallOrPalisadeContinueState = false
@@ -661,7 +669,9 @@ BCS.OverwriteBuildClicked = function()
 		BCS.ContinueWallClicked = GUI_BuildingButtons.ContinueWallClicked;
 	end	
 	GUI_BuildingButtons.ContinueWallClicked = function()
-		GUI.CancelState()
+		if BCS.IsCurrentStateABuildingState(GUI.GetCurrentStateID()) == true then
+			GUI.CancelState()
+		end
 		BCS.ResetWallTurretPositions()
 		
 		local TurretID = GUI.GetSelectedEntity()
@@ -1037,6 +1047,19 @@ BCS.HandlePlacementModeUpdate = function(_currentUpgradeCategory)
 	end
 end
 
+BCS.IsCurrentStateABuildingState = function(_StateNameID)
+	local CurrentStateID = _StateNameID
+	GUI.AddNote(_StateNameID.." - "..GUI.GetStateNameByID("PlaceBuilding"))
+	if ((CurrentStateID == GUI.GetStateNameByID("PlaceBuilding")) 
+		or (CurrentStateID == GUI.GetStateNameByID("PlaceWallGate"))
+		or (CurrentStateID == GUI.GetStateNameByID("PlaceWall"))
+		or (CurrentStateID == GUI.GetStateNameByID("PlaceRoad"))) then
+			return true;
+	else
+		return false;
+	end
+end
+
 -- [[
 	-- > This here is the function that initializes the whole Building Cost System
 	-- > Has to be called before everything else
@@ -1090,10 +1113,7 @@ BCS.InitializeBuildingCostSystem = function()
 		-- Does this case work too?
 		-- CAN'T HAPPEN because all Building functions call GUI.CancelState() which should set the state to selection?
 		-- I Guess ;)
-		if ((_StateNameID ~= GUI.GetStateNameByID("PlaceBuilding")) 
-			and (_StateNameID ~= GUI.GetStateNameByID("PlaceWallGate"))
-			and (_StateNameID ~= GUI.GetStateNameByID("PlaceWall"))
-			and (_StateNameID ~= GUI.GetStateNameByID("PlaceRoad"))) then
+		if BCS.IsCurrentStateABuildingState(_StateNameID) == false then
 				BCS.SetAwaitingVariable(false)
 				BCS.IsInWallOrPalisadeContinueState = false
 				GUI.SendScriptCommand([[BCS.AreBuildingCostsAvailable = nil]])
@@ -1107,6 +1127,9 @@ BCS.InitializeBuildingCostSystem = function()
 		if (BCS.GetAwaitingVariable() == true) then
 			if (BCS.AreResourcesAvailable(g_LastPlacedParam) == false) then
 				BCS.SetAwaitingVariable(false)
+				if BCS.IsCurrentStateABuildingState(GUI.GetCurrentStateID()) == true then
+					GUI.CancelState()
+				end
 				return false, XGUIEng.GetStringTableText("Feedback_TextLines/TextLine_NotEnough_Resources")
 			else
 				return true
