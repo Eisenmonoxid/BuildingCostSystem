@@ -29,6 +29,7 @@ BCS.CurrentOriginalGoodKnockDownFactor = 0.2
 BCS.IsInWallOrPalisadeContinueState = false
 BCS.MarketplaceGoodsCount = false
 BCS.RefundCityGoods = true
+BCS.CurrentWallTypeForClimate = nil -- Save climate zone wall type here
 
 StartTurretX = 1 -- Variables from the Original Lua Game Script
 StartTurretY = 1
@@ -41,7 +42,7 @@ BCS.CurrentFestivalCosts = nil
 BCS.OverlayWidget = "/EndScreen"
 BCS.OverlayIsCurrentlyShown = false
 BCS.EnsuredQuestSystemBehaviorCompatibility = false
-BCS.CurrentBCSVersion = "3.8 - 12.02.2023 15:35"
+BCS.CurrentBCSVersion = "3.8 - 14.02.2023 15:42"
 
 ----------------------------------------------------------------------------------------------------------------------
 --These functions are exported to Userspace---------------------------------------------------------------------------
@@ -523,7 +524,7 @@ BCS.HasCurrentBuildingOwnBuildingCosts = function(_upgradeCategory)
 		BCS.SetAwaitingVariable(true)
 		Framework.WriteToLog("BCS: Building Custom with Type: "..tostring(FirstBuildingType))
 	end
-	BCS.CurrentExpectedBuildingType = nil
+	--BCS.CurrentExpectedBuildingType = nil
 end
 BCS.SetAwaitingVariable = function(_isAwaiting)
 	BCS.IsCurrentBuildingInCostTable = _isAwaiting
@@ -585,14 +586,10 @@ BCS.OverwriteAfterPlacement = function()
     GameCallback_GUI_AfterWallPlacement = function()
 		if g_LastPlacedParam == UpgradeCategories.PalisadeSegment then --Palisade
 			if (BCS.PalisadeCosts ~= nil) then
-				local AmountOfTypes, FirstBuildingType = Logic.GetBuildingTypesInUpgradeCategory(g_LastPlacedParam)
-				BCS.CurrentExpectedBuildingType = FirstBuildingType
 				BCS.RemoveVariableCostsFromOutStock(1)
 			end
-		elseif g_LastPlacedParam == GetUpgradeCategoryForClimatezone("WallSegment") then --Wall
+		elseif g_LastPlacedParam == BCS.CurrentWallTypeForClimate then --Wall
 			if (BCS.WallCosts ~= nil) then
-				local AmountOfTypes, FirstBuildingType = Logic.GetBuildingTypesInUpgradeCategory(g_LastPlacedParam)
-				BCS.CurrentExpectedBuildingType = FirstBuildingType
 				BCS.RemoveVariableCostsFromOutStock(2)
 			end
 		end
@@ -625,6 +622,7 @@ BCS.OverwriteBuildClicked = function()
 		end
 	    if _BuildingType == nil then
 			_BuildingType = GetUpgradeCategoryForClimatezone("WallSegment")
+			BCS.CurrentWallTypeForClimate = _BuildingType
 		end
 		BCS.ResetWallTurretPositions()
 		g_LastPlacedParam = _BuildingType
@@ -682,7 +680,9 @@ BCS.OverwriteBuildClicked = function()
 			and TurretType ~= Entities.B_PalisadeGate_Turret_L
 			and TurretType ~= Entities.B_PalisadeGate_Turret_R then
 				UpgradeCategory = GetUpgradeCategoryForClimatezone("WallSegment")
+				BCS.CurrentWallTypeForClimate = UpgradeCategory
 		end
+		
 		g_LastPlacedParam = UpgradeCategory
 		BCS.IsInWallOrPalisadeContinueState = true
 		
@@ -1027,7 +1027,7 @@ BCS.HandlePlacementModeUpdate = function(_currentUpgradeCategory)
 		else
 			BCS.ShowOverlayWidget(false)
 		end	
-	elseif (LastPlaced == GetUpgradeCategoryForClimatezone("WallSegment")) and (BCS.WallCosts ~= nil) then
+	elseif (LastPlaced == BCS.CurrentWallTypeForClimate) and (BCS.WallCosts ~= nil) then
 		-- Just check for ME since all climate zones have the same costs anyway
 		local Costs = {Logic.GetCostForWall(Entities.B_WallSegment_ME, Entities.B_WallTurret_ME, StartTurretX, StartTurretY, EndTurretX, EndTurretY)}
 		Available = BCS.AreResourcesAvailable(2, Costs[2], Costs[4])
@@ -1077,7 +1077,9 @@ BCS.InitializeBuildingCostSystem = function()
 	
 	BCS.OverwriteOptionalBugfixFunctions() --Not needed, just nice to have
 	BCS.EnsureQuestSystemBehaviorCompatibility() --For QSB compatibility	
-
+	
+	BCS.CurrentWallTypeForClimate = GetUpgradeCategoryForClimatezone("WallSegment")
+	
 	if BCS.PlacementUpdate == nil then
 		BCS.PlacementUpdate = GUI_Construction.PlacementUpdate;
 	end	
@@ -1397,6 +1399,7 @@ BCS.AreFestivalResourcesAvailable = function(_PlayerID, _FestivalIndex)
 end
 
 --Simplify HiRes Usage--
+--In Case no QSB is present--
 if StartSimpleHiResJobEx == nil then
 	function StartSimpleHiResJobEx(_Func, ...)
 		assert(type(_Func) == "function")

@@ -101,6 +101,9 @@ function SetMyBuildingCosts()
 	Goods.G_Beer, Goods.G_Bread, Goods.G_Broom, Goods.G_Cheese, Goods.G_Clothes, Goods.G_Leather, Goods.G_Medicine,
 	Goods.G_PoorBow, Goods.G_PoorSword, Goods.G_Sausage, Goods.G_SmokedFish, Goods.G_Soap, etc ...
 
+	-> For a full list of goods look in the _G - list!
+	-> Eine vollständige Auflistung aller Güter findet sich in der _G - Liste!
+
 	]]--
 	
 	--This function here sets the amount of goods that are refunded when the building is knocked down.
