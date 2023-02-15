@@ -516,9 +516,10 @@ BCS.HasCurrentBuildingOwnBuildingCosts = function(_upgradeCategory)
 	local CostTable = BCS.GetCostByCostTable(_upgradeCategory)
 	if (CostTable == nil) then
 		BCS.SetAwaitingVariable(false)
+		Framework.WriteToLog("BCS: Building NOT Custom with Category: "..tostring(_upgradeCategory))
 	else
 		BCS.SetAwaitingVariable(true)
-		Framework.WriteToLog("BCS: Building Custom with Type: "..tostring(FirstBuildingType))
+		Framework.WriteToLog("BCS: Building Custom with Category: "..tostring(_upgradeCategory))
 	end
 end
 BCS.SetAwaitingVariable = function(_isAwaiting)
