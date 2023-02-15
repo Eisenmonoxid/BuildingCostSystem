@@ -496,14 +496,10 @@ BCS.GetLastPlacedBuildingIDForKnockDown = function(_EntityID)
 		Framework.WriteToLog("BCS: Job "..tostring(_EntityID).." has BuildingType: " ..tostring(Type) .." - Expected: "..tostring(BCS.CurrentExpectedBuildingType))	
 		if Type == BCS.CurrentExpectedBuildingType then
 			
-			if Logic.IsWallSegment(WorkPlaceID) then
-				Framework.WriteToLog("BCS: Job " ..tostring(_EntityID) .. " finished! Reason: Building was a Wall Segment and we don't refund those: " ..tostring(WorkPlaceID))
-			else
-				BCS.AddBuildingToIDTable(WorkPlaceID)
-				Framework.WriteToLog("BCS: Job " ..tostring(_EntityID) .. " finished! Reason: Building Added To ID Table: " ..tostring(WorkPlaceID))
-			end
-			
+			BCS.AddBuildingToIDTable(WorkPlaceID)
 			BCS.CurrentExpectedBuildingType = nil
+			Framework.WriteToLog("BCS: Job " ..tostring(_EntityID) .. " finished! Reason: Building Added To ID Table: " ..tostring(WorkPlaceID))
+			
 			return true;
 		else
 			Framework.WriteToLog("BCS: Job " ..tostring(_EntityID) .. " finished! Reason: CurrentExpectedBuildingType ~= WorkplaceID-Type!")
@@ -1108,8 +1104,6 @@ BCS.InitializeBuildingCostSystem = function()
 	GameCallback_GUI_StateChanged = function(_StateNameID, _Armed)
 		BCS.GUI_StateChanged(_StateNameID, _Armed)
 		
-		BCS.ResetTrailAndRoadCosts()
-		BCS.ResetWallTurretPositions()
 		-- TODO: What happens when the player switches from e.g. PlaceBuilding into PlaceBuilding? 
 		-- Does this case work too?
 		-- CAN'T HAPPEN because all Building functions call GUI.CancelState() which should set the state to selection?
@@ -1119,6 +1113,9 @@ BCS.InitializeBuildingCostSystem = function()
 			BCS.SetAwaitingVariable(false)
 			BCS.IsInWallOrPalisadeContinueState = false
 			GUI.SendScriptCommand([[BCS.AreBuildingCostsAvailable = nil]])
+			
+			BCS.ResetTrailAndRoadCosts()
+			BCS.ResetWallTurretPositions()
 		end
 	end
 
@@ -1302,6 +1299,7 @@ BCS.EnsureQuestSystemBehaviorCompatibility = function()
 	if (API and QSB) and not BCS.EnsuredQuestSystemBehaviorCompatibility then
 		if QSB.ScriptEvents ~= nil then
 			-- When briefing ends, reset the Endscreen_Exit function correctly
+			-- This needs rework when the QSB3 ist used!
 			API.AddScriptEventListener(QSB.ScriptEvents.BriefingEnded, BCS.OverwriteEndScreenCallback)
 		end
 		BCS.EnsuredQuestSystemBehaviorCompatibility = true

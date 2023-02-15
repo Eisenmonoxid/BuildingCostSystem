@@ -35,6 +35,10 @@ function SetMyBuildingCosts()
 				end)
 			]])
 		end
+		
+		-- If you don't use the QSB, you have to overwrite the Mission_OnSaveGameLoaded() in the global script
+		-- And call Logic.ExecuteInLuaLocalState('BCS.InitializeBuildingCostSystem()') from there.
+		-- Otherwise all costs are gone after Saveload and the script will not work!
 	else
 		local ErrorMessage = "ERROR: Could not load BuildingCostSystem!"
 		Framework.WriteToLog(ErrorMessage)
