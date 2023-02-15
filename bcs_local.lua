@@ -42,7 +42,7 @@ BCS.CurrentFestivalCosts = nil
 BCS.OverlayWidget = "/EndScreen"
 BCS.OverlayIsCurrentlyShown = false
 BCS.EnsuredQuestSystemBehaviorCompatibility = false
-BCS.CurrentBCSVersion = "3.9 - 15.02.2023 19:08"
+BCS.CurrentBCSVersion = "3.9 - 15.02.2023 23:28"
 
 ----------------------------------------------------------------------------------------------------------------------
 --These functions are exported to Userspace---------------------------------------------------------------------------
