@@ -42,7 +42,7 @@ BCS.CurrentFestivalCosts = nil
 BCS.OverlayWidget = "/EndScreen"
 BCS.OverlayIsCurrentlyShown = false
 BCS.EnsuredQuestSystemBehaviorCompatibility = false
-BCS.CurrentBCSVersion = "3.8 - 14.02.2023 15:42"
+BCS.CurrentBCSVersion = "3.9 - 15.02.2023 19:08"
 
 ----------------------------------------------------------------------------------------------------------------------
 --These functions are exported to Userspace---------------------------------------------------------------------------
@@ -496,14 +496,10 @@ BCS.GetLastPlacedBuildingIDForKnockDown = function(_EntityID)
 		Framework.WriteToLog("BCS: Job "..tostring(_EntityID).." has BuildingType: " ..tostring(Type) .." - Expected: "..tostring(BCS.CurrentExpectedBuildingType))	
 		if Type == BCS.CurrentExpectedBuildingType then
 			
-			if Logic.IsWallSegment(WorkPlaceID) then
-				Framework.WriteToLog("BCS: Job " ..tostring(_EntityID) .. " finished! Reason: Building was a Wall Segment and we don't refund those: " ..tostring(WorkPlaceID))
-			else
-				BCS.AddBuildingToIDTable(WorkPlaceID)
-				Framework.WriteToLog("BCS: Job " ..tostring(_EntityID) .. " finished! Reason: Building Added To ID Table: " ..tostring(WorkPlaceID))
-			end
-			
+			BCS.AddBuildingToIDTable(WorkPlaceID)
 			BCS.CurrentExpectedBuildingType = nil
+			Framework.WriteToLog("BCS: Job " ..tostring(_EntityID) .. " finished! Reason: Building Added To ID Table: " ..tostring(WorkPlaceID))
+			
 			return true;
 		else
 			Framework.WriteToLog("BCS: Job " ..tostring(_EntityID) .. " finished! Reason: CurrentExpectedBuildingType ~= WorkplaceID-Type!")
@@ -520,11 +516,11 @@ BCS.HasCurrentBuildingOwnBuildingCosts = function(_upgradeCategory)
 	local CostTable = BCS.GetCostByCostTable(_upgradeCategory)
 	if (CostTable == nil) then
 		BCS.SetAwaitingVariable(false)
+		Framework.WriteToLog("BCS: Building NOT Custom with Category: "..tostring(_upgradeCategory))
 	else
 		BCS.SetAwaitingVariable(true)
-		Framework.WriteToLog("BCS: Building Custom with Type: "..tostring(FirstBuildingType))
+		Framework.WriteToLog("BCS: Building Custom with Category: "..tostring(_upgradeCategory))
 	end
-	--BCS.CurrentExpectedBuildingType = nil
 end
 BCS.SetAwaitingVariable = function(_isAwaiting)
 	BCS.IsCurrentBuildingInCostTable = _isAwaiting
@@ -991,6 +987,7 @@ BCS.OverwriteTooltipHandling = function()
 		end
 	end
 end
+
 BCS.HandlePlacementModeUpdate = function(_currentUpgradeCategory)
 	local LastPlaced = _currentUpgradeCategory
 	local Available = false
@@ -1108,17 +1105,18 @@ BCS.InitializeBuildingCostSystem = function()
 	GameCallback_GUI_StateChanged = function(_StateNameID, _Armed)
 		BCS.GUI_StateChanged(_StateNameID, _Armed)
 		
-		BCS.ShowOverlayWidget(false)		
-		BCS.ResetTrailAndRoadCosts()
-		BCS.ResetWallTurretPositions()
 		-- TODO: What happens when the player switches from e.g. PlaceBuilding into PlaceBuilding? 
 		-- Does this case work too?
 		-- CAN'T HAPPEN because all Building functions call GUI.CancelState() which should set the state to selection?
 		-- I Guess ;)
 		if BCS.IsCurrentStateABuildingState(_StateNameID) == false then
+			BCS.ShowOverlayWidget(false)		
 			BCS.SetAwaitingVariable(false)
 			BCS.IsInWallOrPalisadeContinueState = false
 			GUI.SendScriptCommand([[BCS.AreBuildingCostsAvailable = nil]])
+			
+			BCS.ResetTrailAndRoadCosts()
+			BCS.ResetWallTurretPositions()
 		end
 	end
 
@@ -1215,7 +1213,7 @@ end
 
 BCS.ShowOverlayWidget = function(_flag)
 	if _flag == true then
-		if BCS.OverlayIsCurrentlyShown == false then
+		if (BCS.OverlayIsCurrentlyShown == false) or (XGUIEng.IsWidgetShownEx(BCS.OverlayWidget) == 0) then
 			local ScreenSizeX, ScreenSizeY = GUI.GetScreenSize()
 			XGUIEng.SetWidgetSize(BCS.OverlayWidget, ScreenSizeX * 2, ScreenSizeY * 2)
 			XGUIEng.PushPage(BCS.OverlayWidget, false)
@@ -1302,15 +1300,8 @@ BCS.EnsureQuestSystemBehaviorCompatibility = function()
 	if (API and QSB) and not BCS.EnsuredQuestSystemBehaviorCompatibility then
 		if QSB.ScriptEvents ~= nil then
 			-- When briefing ends, reset the Endscreen_Exit function correctly
+			-- This needs rework when the QSB3 ist used!
 			API.AddScriptEventListener(QSB.ScriptEvents.BriefingEnded, BCS.OverwriteEndScreenCallback)
-		end
-		if API.AddSaveGameAction then
-			-- Register Savegame
-			GUI.SendScriptCommand([[
-				API.AddSaveGameAction(function()
-					Logic.ExecuteInLuaLocalState('BCS.InitializeBuildingCostSystem()')
-				end)
-			]])
 		end
 		BCS.EnsuredQuestSystemBehaviorCompatibility = true
 	end

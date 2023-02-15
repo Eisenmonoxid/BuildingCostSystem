@@ -1,11 +1,12 @@
 function SetMyBuildingCosts()
 	--[[
-		-> This function has to be called from the local script after BCS.InitializeBuildingCostSystem()
+	
+		-> This function has to be called from the local script after the bcs_local.lua was loaded.
 		-> You can change all costs at every time in the game. 
 		-> The first good amount has to be equal or higher than the original costs.
 		-> The second good and amount can be chosen freely.
 		
-		-> Diese Funktion muss aus dem lokalen Skript aufgerufen werden nach BCS.InitializeBuildingCostSystem()
+		-> Diese Funktion muss aus dem lokalen Skript aufgerufen werden nachdem bcs_local.lua geladen wurde.
 		-> Es können alle Gebäudekosten zu jedem Zeitpunkt im Spiel geändert werden.
 		-> Die Höhe der ersten Ware muss gleich oder höher dem Originalwert liegen!
 		-> Die zweite Ware und ihre Höhe können frei festgelegt werden.
@@ -15,18 +16,35 @@ function SetMyBuildingCosts()
 		function Mission_LocalOnMapStart()
 			Script.Load("C:\\Path\\bcs_local.lua")
 			Script.Load("C:\\Path\\bcs_costs.lua")
-	
-			if BCS ~= nil then
-				BCS.InitializeBuildingCostSystem() -- Init system
-				SetMyBuildingCosts() -- Set Custom Costs
-			else
-				Framework.WriteToLog("ERROR: Could not load BuildingCostSystem!")
-				Game.LevelStop()
-				Framework.CloseGame()
-			end
+
+			SetMyBuildingCosts() -- Set Custom Costs
 		end
 		
 	]]--
+	
+	-- Initialize BCS --
+	if BCS ~= nil then
+		-- Init System
+		BCS.InitializeBuildingCostSystem()
+		-- Add Savegame when QSB is present
+		if (API and QSB) and API.AddSaveGameAction then
+			-- Register Savegame
+			GUI.SendScriptCommand([[
+				API.AddSaveGameAction(function()
+					Logic.ExecuteInLuaLocalState('BCS.InitializeBuildingCostSystem()')
+				end)
+			]])
+		end
+		
+		-- If you don't use the QSB, you have to overwrite the Mission_OnSaveGameLoaded() in the global script
+		-- And call Logic.ExecuteInLuaLocalState('BCS.InitializeBuildingCostSystem()') from there.
+		-- Otherwise all costs are gone after Saveload and the script will not work!
+	else
+		local ErrorMessage = "ERROR: Could not load BuildingCostSystem!"
+		Framework.WriteToLog(ErrorMessage)
+		assert(false, ErrorMessage)
+	end
+	-- Done --
 
 	--Gatherer - Farms
 	BCS.EditBuildingCosts(UpgradeCategories.CattleFarm, 15, Goods.G_Salt, 12)
@@ -70,13 +88,13 @@ function SetMyBuildingCosts()
 	--Other
 	BCS.EditBuildingCosts(UpgradeCategories.Cistern, 12, Goods.G_Olibanum, 15)
 	--Fields
-	BCS.EditBuildingCosts(UpgradeCategories.GrainField_SouthEurope, 8, Goods.G_Dye, 6) --Replace SouthEurope with your climate zone! / Ersetze SouthEurope mit deiner derzeitigen Klimazone!
+	BCS.EditBuildingCosts(GetUpgradeCategoryForClimatezone("GrainField"), 8, Goods.G_Dye, 6)
 	BCS.EditBuildingCosts(UpgradeCategories.CattlePasture, 8, Goods.G_Olibanum, 6)
 	BCS.EditBuildingCosts(UpgradeCategories.SheepPasture, 8, Goods.G_Medicine, 6)
 	BCS.EditBuildingCosts(UpgradeCategories.BeeHive, 8, Goods.G_Herb, 8)
 	--Palisade/Wall - Gates
 	BCS.EditBuildingCosts(UpgradeCategories.PalisadeGate, 10, Goods.G_Herb, 6)
-	BCS.EditBuildingCosts(UpgradeCategories.WallGate_SouthEurope, 16, Goods.G_Grain, 6) --Replace SouthEurope with your climate zone! / Ersetze SouthEurope mit deiner derzeitigen Klimazone!
+	BCS.EditBuildingCosts(GetUpgradeCategoryForClimatezone("WallGate"), 16, Goods.G_Grain, 6)
 	--Buildings without fixed cost
 	BCS.EditWallCosts(3.2, Goods.G_Grain, 2.7) --Wallcosts/Mauerkosten (!NO REFUND)
 	BCS.EditPalisadeCosts(3.5, Goods.G_Carcass, 1.2) --Palisadecosts/Palisadenkosten (!NO REFUND)
@@ -129,7 +147,11 @@ function SetMyBuildingCosts()
 end
 
 function ResetMyBuildingCosts()
-	--Reset costs / Kosten zurücksetzen
+	-- Reset costs / Kosten zurücksetzen
+	-- Just example calls / Nur Beispielaufrufe
+	
 	BCS.EditBuildingCosts(UpgradeCategories.BeeHive, nil)
 	BCS.EditTrailCosts(nil)
+	BCS.EditFestivalCosts(nil)
 end
+--#EOF
