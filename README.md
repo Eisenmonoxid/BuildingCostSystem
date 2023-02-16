@@ -1,6 +1,6 @@
 # BuildingCostSystem (BCS)
 
-BCS is a extension lua script for the game "The Settlers 6" and can be embedded into a usermap.
+BCS is an lua script extension for the game "The Settlers 6" and can be embedded into a usermap.
 
 ### Usage
 Include the file `bcs_local.lua` in your map folder and load it into your local map script. You can either use Script.Load() or the designated function from the [QSB](https://github.com/Siedelwood/Swift).
