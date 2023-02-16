@@ -27,22 +27,40 @@ function SetMyBuildingCosts()
 		-- Init System
 		BCS.InitializeBuildingCostSystem()
 		-- Add Savegame when QSB is present
-		if (API and QSB) and API.AddSaveGameAction then
+		if (API and QSB) then
 			-- Register Savegame
-			GUI.SendScriptCommand([[
-				API.AddSaveGameAction(function()
-					Logic.ExecuteInLuaLocalState('BCS.InitializeBuildingCostSystem()')
+			if API.AddSaveGameAction then -- QSB-S 2.x
+				GUI.SendScriptCommand([[
+					API.AddSaveGameAction(function()
+						Logic.ExecuteInLuaLocalState('BCS.InitializeBuildingCostSystem()')
+					end)
+				]])
+				Framework.WriteToLog("BCS: QSB-S 2.x found! AddSaveGameAction for Savegame registered!")
+			elseif API.AddScriptEventListener and QSB.ScriptEvents ~= nil then -- QSB-S 3.x
+				API.AddScriptEventListener(QSB.ScriptEvents.SaveGameLoaded, function()
+					BCS.InitializeBuildingCostSystem()
 				end)
-			]])
+				API.AddScriptEventListener(QSB.ScriptEvents.BriefingEnded, BCS.OverwriteEndScreenCallback)
+				Framework.WriteToLog("BCS: QSB-S 3.x found! ScriptEventListener for Savegame and BriefingEnded registered!")
+			else
+				Framework.WriteToLog("BCS: QSB-S found, but no Savegame registered. Has to be done manually!")
+			end
+		else
+			Framework.WriteToLog("BCS: QSB-S NOT found! Savegamehandling has to be done manually!")
 		end
 		
-		-- If you don't use the QSB, you have to overwrite the Mission_OnSaveGameLoaded() in the global script
+		-- If you don't use the QSB-S, you have to overwrite the Mission_OnSaveGameLoaded() in the global script.
 		-- And call Logic.ExecuteInLuaLocalState('BCS.InitializeBuildingCostSystem()') from there.
 		-- Otherwise all costs are gone after Saveload and the script will not work!
+		
+		-- Sollte die QSB-S nicht verwendet werden, muss Mission_OnSaveGameLoaded() im globalen Skript manuell überschrieben werden.
+		-- Dort muss dann Logic.ExecuteInLuaLocalState('BCS.InitializeBuildingCostSystem()') aufgerufen werden.
+		-- Ansonsten sind nach Saveload alle Kosten weg und das Skript wird nicht funktionieren!
 	else
 		local ErrorMessage = "ERROR: Could not load BuildingCostSystem!"
 		Framework.WriteToLog(ErrorMessage)
 		assert(false, ErrorMessage)
+		return;
 	end
 	-- Done --
 
@@ -72,7 +90,7 @@ function SetMyBuildingCosts()
 	BCS.EditBuildingCosts(UpgradeCategories.Pharmacy, 10, Goods.G_Honeycomb, 25)
 	--CityBuildings - Entertainment
 	BCS.EditBuildingCosts(UpgradeCategories.Tavern, 10, Goods.G_Salt, 12)
-	BCS.EditBuildingCosts(UpgradeCategories.Theatre, 25, Goods.G_Dye, 12)
+	BCS.EditBuildingCosts(UpgradeCategories.Theatre, 25, Goods.G_PoorSword, 12)
 	BCS.EditBuildingCosts(UpgradeCategories.Baths, 16, Goods.G_Olibanum, 12)
 	--CityBuildings - Decoration
 	BCS.EditBuildingCosts(UpgradeCategories.Blacksmith, 15, Goods.G_MusicalInstrument, 12)
@@ -102,8 +120,8 @@ function SetMyBuildingCosts()
 	BCS.EditTrailCosts(Goods.G_Herb, 1.5, Goods.G_Sausage, 1.1) --Streetcosts/Wegkosten
 	
 	BCS.EditFestivalCosts(1.5, Goods.G_Sausage, 15) --Festivalcosts/Festkosten
-	--The first arguments here are multiplicators, that means: 1.5 -> 1.5 times the original cost
-	--Die ersten Argumente hier sind Multiplikatoren, heißt: 1.5 -> 1.5 mal den Originalbetrag
+	--The arguments here are multiplicators, that means: 1.5 -> 1.5 times the original cost
+	--Die Argumente hier sind Multiplikatoren, heißt: 1.5 -> 1.5 mal den Originalbetrag
 	
 	--[[
 	

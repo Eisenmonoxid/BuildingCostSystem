@@ -41,8 +41,7 @@ BCS.CurrentFestivalCosts = nil
 
 BCS.OverlayWidget = "/EndScreen"
 BCS.OverlayIsCurrentlyShown = false
-BCS.EnsuredQuestSystemBehaviorCompatibility = false
-BCS.CurrentBCSVersion = "3.9 - 15.02.2023 23:28"
+BCS.CurrentBCSVersion = "3.9 - 16.02.2023 21:58"
 
 ----------------------------------------------------------------------------------------------------------------------
 --These functions are exported to Userspace---------------------------------------------------------------------------
@@ -1071,9 +1070,7 @@ BCS.InitializeBuildingCostSystem = function()
 	BCS.OverwriteEndScreenCallback()
 	BCS.FestivalCostsHandler()
 	BCS.OverwriteTooltipHandling()
-	
 	BCS.OverwriteOptionalBugfixFunctions() --Not needed, just nice to have
-	BCS.EnsureQuestSystemBehaviorCompatibility() --For QSB compatibility	
 	
 	BCS.CurrentWallTypeForClimate = GetUpgradeCategoryForClimatezone("WallSegment")
 	
@@ -1296,17 +1293,6 @@ BCS.OverwriteOptionalBugfixFunctions = function()
 	end
 end
 
-BCS.EnsureQuestSystemBehaviorCompatibility = function()
-	if (API and QSB) and not BCS.EnsuredQuestSystemBehaviorCompatibility then
-		if QSB.ScriptEvents ~= nil then
-			-- When briefing ends, reset the Endscreen_Exit function correctly
-			-- This needs rework when the QSB3 ist used!
-			API.AddScriptEventListener(QSB.ScriptEvents.BriefingEnded, BCS.OverwriteEndScreenCallback)
-		end
-		BCS.EnsuredQuestSystemBehaviorCompatibility = true
-	end
-end
-
 BCS.FestivalCostsHandler = function()
 
 	if BCS.GetFestivalCost == nil then
@@ -1389,8 +1375,8 @@ BCS.AreFestivalResourcesAvailable = function(_PlayerID, _FestivalIndex)
 	end
 end
 
---Simplify HiRes Usage--
---In Case no QSB is present--
+-- Simplify HiRes Usage --
+-- In Case no QSB-S is present --
 if StartSimpleHiResJobEx == nil then
 	function StartSimpleHiResJobEx(_Func, ...)
 		assert(type(_Func) == "function")
