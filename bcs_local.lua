@@ -1288,7 +1288,12 @@ BCS.OverwriteOptionalBugfixFunctions = function()
 		BCS.BuildingNameUpdate()
 		local CurrentWidgetID = XGUIEng.GetCurrentWidgetID()
 		if XGUIEng.GetText(CurrentWidgetID) == "{center}B_Cathedral_Big" then
-			XGUIEng.SetText(CurrentWidgetID, "{center}Kathedrale")
+			local CurrentLanguage = Network.GetDesiredLanguage()
+			if CurrentLanguage == "de" then
+				XGUIEng.SetText(CurrentWidgetID, "{center}Kathedrale")
+			else
+				XGUIEng.SetText(CurrentWidgetID, "{center}Cathedral")
+			end
 		end
 	end
 end
