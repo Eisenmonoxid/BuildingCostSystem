@@ -41,7 +41,7 @@ BCS.CurrentFestivalCosts = nil
 
 BCS.OverlayWidget = "/EndScreen"
 BCS.OverlayIsCurrentlyShown = false
-BCS.CurrentBCSVersion = "3.9 - 16.02.2023 21:58"
+BCS.CurrentBCSVersion = "3.9 - 05.03.2023 14:12"
 
 ----------------------------------------------------------------------------------------------------------------------
 --These functions are exported to Userspace---------------------------------------------------------------------------
@@ -1202,9 +1202,11 @@ BCS.OverwriteEndScreenCallback = function()
 		BCS.EndScreen_ExitGame = EndScreen_ExitGame;
 	end	
 	EndScreen_ExitGame = function()
-		GUI.CancelState()
-		Message(XGUIEng.GetStringTableText("Feedback_TextLines/TextLine_NotEnough_Resources"))
-		Framework.WriteToLog("BCS: Resources Ran Out!")
+		if BCS.IsCurrentStateABuildingState() == true then
+			GUI.CancelState()
+			Message(XGUIEng.GetStringTableText("Feedback_TextLines/TextLine_NotEnough_Resources"))
+			Framework.WriteToLog("BCS: Resources Ran Out!")
+		end
 	end
 end
 
@@ -1226,7 +1228,7 @@ BCS.ShowOverlayWidget = function(_flag)
 			GUI.SendScriptCommand([[BCS.AreBuildingCostsAvailable = false]])
 		end
 	else
-		if BCS.OverlayIsCurrentlyShown == true then
+		if BCS.OverlayIsCurrentlyShown == true or (XGUIEng.IsWidgetShownEx(BCS.OverlayWidget) == 1) then
 			XGUIEng.ShowAllSubWidgets(BCS.OverlayWidget, 0)
 			XGUIEng.ShowWidget(BCS.OverlayWidget, 0)
 			BCS.OverlayIsCurrentlyShown = false

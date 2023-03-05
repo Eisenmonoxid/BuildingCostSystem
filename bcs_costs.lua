@@ -63,7 +63,8 @@ function SetMyBuildingCosts()
 		return;
 	end
 	-- Done --
-
+	
+	--< Set your own BuildingCosts here! / Setze deine eigenen Gebäudekosten hier! >--
 	--Gatherer - Farms
 	BCS.EditBuildingCosts(UpgradeCategories.CattleFarm, 15, Goods.G_Salt, 12)
 	BCS.EditBuildingCosts(UpgradeCategories.GrainFarm, 15, Goods.G_Olibanum, 12)
