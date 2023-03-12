@@ -37,9 +37,7 @@ function SetMyBuildingCosts()
 				]])
 				Framework.WriteToLog("BCS: QSB-S 2.x found! AddSaveGameAction for Savegame registered!")
 			elseif API.AddScriptEventListener and QSB.ScriptEvents ~= nil then -- QSB-S 3.x
-				API.AddScriptEventListener(QSB.ScriptEvents.SaveGameLoaded, function()
-					BCS.InitializeBuildingCostSystem()
-				end)
+				API.AddScriptEventListener(QSB.ScriptEvents.SaveGameLoaded, BCS.InitializeBuildingCostSystem)
 				API.AddScriptEventListener(QSB.ScriptEvents.BriefingEnded, BCS.OverwriteEndScreenCallback)
 				Framework.WriteToLog("BCS: QSB-S 3.x found! ScriptEventListener for Savegame and BriefingEnded registered!")
 			else

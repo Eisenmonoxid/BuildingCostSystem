@@ -6,12 +6,12 @@ BCS = {}
 BCS.BuildingCosts = {} -- Contains all new costs
 BCS.BuildingIDTable = {} -- Contains Building IDs and the corresponding costs
 
-BCS.RoadMultiplier = {}
+BCS.RoadMultiplier = {} -- Road
 BCS.RoadMultiplier.First = 1
 BCS.RoadMultiplier.Second = 1
 BCS.RoadMultiplier.CurrentActualCost = 1
 
-BCS.StreetMultiplier = {}
+BCS.StreetMultiplier = {} -- Trail
 BCS.StreetMultiplier.First = 1
 BCS.StreetMultiplier.Second = 1
 BCS.StreetMultiplier.CurrentX = 1
@@ -41,7 +41,7 @@ BCS.CurrentFestivalCosts = nil
 
 BCS.OverlayWidget = "/EndScreen"
 BCS.OverlayIsCurrentlyShown = false
-BCS.CurrentBCSVersion = "3.9 - 05.03.2023 14:12"
+BCS.CurrentBCSVersion = "3.9 - 12.03.2023 01:53"
 
 ----------------------------------------------------------------------------------------------------------------------
 --These functions are exported to Userspace---------------------------------------------------------------------------
@@ -279,11 +279,12 @@ BCS.RemoveCostsFromOutStockCityGoods = function(_goodType, _goodAmount, _playerI
 	local CurrentOutStock = 0
     for i = 1, #Buildings, 1 do
 		CurrentOutStock = Logic.GetAmountOnOutStockByGoodType(Buildings[i], _goodType)
-		if CurrentOutStock <= AmountToRemove then
+		if CurrentOutStock < AmountToRemove then
 			GUI.RemoveGoodFromStock(Buildings[i], _goodType, CurrentOutStock)
 			AmountToRemove = AmountToRemove - CurrentOutStock
 		else
 			GUI.RemoveGoodFromStock(Buildings[i], _goodType, AmountToRemove)
+			AmountToRemove = 0
 			break;
 		end
     end
@@ -293,11 +294,12 @@ BCS.RemoveCostsFromOutStockCityGoods = function(_goodType, _goodAmount, _playerI
         for j = 2, #MarketSlots, 1 do
             if Logic.GetIndexOnOutStockByGoodType(MarketSlots[j], _goodType) ~= -1 then
                 CurrentOutStock = Logic.GetAmountOnOutStockByGoodType(MarketSlots[j], _goodType)
-				if CurrentOutStock <= AmountToRemove then
+				if CurrentOutStock < AmountToRemove then
 					GUI.RemoveGoodFromStock(MarketSlots[j], _goodType, CurrentOutStock)
 					AmountToRemove = AmountToRemove - CurrentOutStock
 				else
 					GUI.RemoveGoodFromStock(MarketSlots[j], _goodType, AmountToRemove)
+					AmountToRemove = 0
 					break;
 				end
             end
@@ -434,7 +436,7 @@ BCS.RefundKnockDownForCityGoods = function(_goodType, _goodAmount)
 			CurrentMaxOutStock = Logic.GetMaxAmountOnStock(Buildings[i])
 			if CurrentOutStock < CurrentMaxOutStock then
 				local FreeStock = CurrentMaxOutStock - CurrentOutStock
-				if FreeStock > AmountToRemove then
+				if FreeStock >= AmountToRemove then
 					GUI.SendScriptCommand([[
 						Logic.AddGoodToStock(]]..Buildings[i]..[[, ]].._goodType..[[, ]]..AmountToRemove..[[)	
 					]])
