@@ -1204,11 +1204,9 @@ BCS.OverwriteEndScreenCallback = function()
 		BCS.EndScreen_ExitGame = EndScreen_ExitGame;
 	end	
 	EndScreen_ExitGame = function()
-		if BCS.IsCurrentStateABuildingState() == true then
-			GUI.CancelState()
-			Message(XGUIEng.GetStringTableText("Feedback_TextLines/TextLine_NotEnough_Resources"))
-			Framework.WriteToLog("BCS: Resources Ran Out!")
-		end
+		GUI.CancelState()
+		Message(XGUIEng.GetStringTableText("Feedback_TextLines/TextLine_NotEnough_Resources"))
+		Framework.WriteToLog("BCS: Resources Ran Out!")
 	end
 end
 
