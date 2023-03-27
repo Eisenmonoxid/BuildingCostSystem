@@ -584,11 +584,21 @@ BCS.OverwriteAfterPlacement = function()
 		if g_LastPlacedParam == UpgradeCategories.PalisadeSegment then --Palisade
 			if (BCS.PalisadeCosts ~= nil) then
 				BCS.RemoveVariableCostsFromOutStock(1)
+				
+				if BCS.IsCurrentStateABuildingState(GUI.GetCurrentStateID()) == true then
+					GUI.CancelState()
+				end
+				
 			end
 		elseif g_LastPlacedParam == BCS.CurrentWallTypeForClimate then --Wall
 			if (BCS.WallCosts ~= nil) then
 				BCS.RemoveVariableCostsFromOutStock(2)
 			end
+			
+			if BCS.IsCurrentStateABuildingState(GUI.GetCurrentStateID()) == true then
+				GUI.CancelState()
+			end
+			
 		end
 		
 		BCS.IsInWallOrPalisadeContinueState = false
@@ -849,7 +859,7 @@ BCS.OverwriteTooltipHandling = function()
 		local Good1ContainerPath = TooltipCostsContainerPath .. "/1Good"
 		local Goods2ContainerPath = TooltipCostsContainerPath .. "/2Goods"
 		local NumberOfValidAmounts, Good1Path, Good2Path = 0, 0, 0
-		local BCSBuildingInCostTable, IsFestival, IsVariableCostBuilding = false, false, false
+		local UseBCSCosts, IsFestival = false, false
 		local CurrentState = GUI.GetCurrentStateID()
 		
 		local Name = XGUIEng.GetWidgetNameByID(XGUIEng.GetCurrentWidgetID())
@@ -863,9 +873,6 @@ BCS.OverwriteTooltipHandling = function()
 			_Costs = {BCS.WallCosts[1], -1, BCS.WallCosts[3], -1}	
 		elseif (Name == "StartFestival" and BCS.CurrentFestivalCosts ~= nil) then
 			IsFestival = true
-		elseif (CurrentState == 2 or CurrentState == 5) then
-			-- 2 == "PlaceRoad" | 5 == "PlaceWall" -> GUI.GetCurrentStateName()
-			IsVariableCostBuilding = true
 		elseif Name == "PlaceField" then
 			local EntityType = Logic.GetEntityType(GUI.GetSelectedEntity())
 			local UpgradeCategory
@@ -881,12 +888,18 @@ BCS.OverwriteTooltipHandling = function()
 			end
 			local CostTable = BCS.GetCostByCostTable(UpgradeCategory)
 			if (CostTable ~= nil) then
-				BCSBuildingInCostTable = true
+				UseBCSCosts = true
 			end
+		elseif (CurrentState == 2 or CurrentState == 5) then
+			-- 2 == "PlaceRoad" | 5 == "PlaceWall" -> GUI.GetCurrentStateName()
+			UseBCSCosts = true
 		else
-			local CostTable = BCS.GetCostByCostTable(Logic.GetUpgradeCategoryByBuildingType(Entities[Name]))
-			if (CostTable ~= nil) then
-				BCSBuildingInCostTable = true
+			local Entity = Entities[Name]
+			if Entity ~= 0 and Entity ~= nil then
+				local CostTable = BCS.GetCostByCostTable(Logic.GetUpgradeCategoryByBuildingType(Entity))
+				if (CostTable ~= nil) then
+					UseBCSCosts = true
+				end
 			end
 		end
 				
@@ -936,10 +949,13 @@ BCS.OverwriteTooltipHandling = function()
 				
 				-- Changed
 				local ID = BCS.GetEntityIDToAddToOutStock(CostsGoodType)
-				if (ID == false and BCSBuildingInCostTable == true) or (ID == false and IsVariableCostBuilding == true) then
-					PlayersGoodAmount = BCS.GetAmountOfGoodsInSettlement(CostsGoodType, PlayerID, BCS.MarketplaceGoodsCount)
-				elseif IsFestival == true then
-					PlayersGoodAmount = BCS.GetAmountOfGoodsInSettlement(CostsGoodType, PlayerID, false)
+				local MarketGoodsCount = BCS.MarketplaceGoodsCount
+				if IsFestival == true then
+					MarketGoodsCount = false
+				end
+				
+				if (ID == false and UseBCSCosts == true) then
+					PlayersGoodAmount = BCS.GetAmountOfGoodsInSettlement(CostsGoodType, PlayerID, MarketGoodsCount)
 				elseif _GoodsInSettlementBoolean == true then
 					PlayersGoodAmount = GetPlayerGoodsInSettlement(CostsGoodType, PlayerID, true)
 				else 
