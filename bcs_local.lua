@@ -41,7 +41,7 @@ BCS.CurrentFestivalCosts = nil
 
 BCS.OverlayWidget = "/EndScreen"
 BCS.OverlayIsCurrentlyShown = false
-BCS.CurrentBCSVersion = "3.9 - 28.03.2023 11:53"
+BCS.CurrentBCSVersion = "4.1 - 28.03.2023 13:46"
 
 ----------------------------------------------------------------------------------------------------------------------
 --These functions are exported to Userspace---------------------------------------------------------------------------
@@ -72,6 +72,7 @@ BCS.EditBuildingCosts = function(_upgradeCategory, _originalCostAmount, _newGood
 end
 
 BCS.EditRoadCosts = function(_originalCostFactor, _newGood, _newGoodFactor)
+	assert(type(BCS.GetEntityTypeFullCost) == "function")
 	if _originalCostFactor == nil then
 		BCS.RoadCosts = nil
 		return;
@@ -81,6 +82,7 @@ BCS.EditRoadCosts = function(_originalCostFactor, _newGood, _newGoodFactor)
 end
 
 BCS.EditWallCosts = function(_originalCostFactor, _newGood, _newGoodFactor)
+	assert(type(BCS.GetEntityTypeFullCost) == "function")
 	if _originalCostFactor == nil then
 		BCS.WallCosts = nil
 		return;
@@ -90,6 +92,7 @@ BCS.EditWallCosts = function(_originalCostFactor, _newGood, _newGoodFactor)
 end
 
 BCS.EditPalisadeCosts = function(_originalCostFactor, _newGood, _newGoodFactor)
+	assert(type(BCS.GetEntityTypeFullCost) == "function")
 	if _originalCostFactor == nil then
 		BCS.PalisadeCosts = nil
 		return;
@@ -99,6 +102,7 @@ BCS.EditPalisadeCosts = function(_originalCostFactor, _newGood, _newGoodFactor)
 end
 
 BCS.EditTrailCosts = function(_firstGood, _originalCostFactor, _secondGood, _newGoodFactor)
+	assert(type(BCS.GetEntityTypeFullCost) == "function")
 	if _firstGood == nil then
 		BCS.TrailCosts = nil
 		return;
@@ -107,12 +111,14 @@ BCS.EditTrailCosts = function(_firstGood, _originalCostFactor, _secondGood, _new
 end
 
 BCS.SetKnockDownFactor = function(_factorOriginalGood, _factorNewGood) --0.5 is half of the cost
+	assert(type(BCS.GetEntityTypeFullCost) == "function")
 	assert(_factorOriginalGood < 1 and _factorNewGood < 1)
 	BCS.CurrentKnockDownFactor = _factorNewGood
 	BCS.CurrentOriginalGoodKnockDownFactor = _factorOriginalGood
 end
 
 BCS.EditFestivalCosts = function(_originalCostFactor, _secondGood, _newGoodFactor)
+	assert(type(BCS.GetEntityTypeFullCost) == "function")
 	if _originalCostFactor == nil then
 		BCS.CurrentFestivalCosts = nil
 		return;
@@ -401,20 +407,20 @@ BCS.RefundKnockDown = function(_entityID)
 	
 	if IDFirstGood == false then -- CityGood
 		if BCS.RefundCityGoods == true then
-			BCS.RefundKnockDownForCityGoods(CostTable[2], (Round(CostTable[3] * BCS.CurrentOriginalGoodKnockDownFactor)))
+			BCS.RefundKnockDownForCityGoods(CostTable[2], (math.ceil(CostTable[3] * BCS.CurrentOriginalGoodKnockDownFactor)))
 		end
 	else
 		GUI.SendScriptCommand([[
-			Logic.AddGoodToStock(]]..IDFirstGood..[[, ]]..CostTable[2]..[[, ]]..(Round(CostTable[3] * BCS.CurrentOriginalGoodKnockDownFactor))..[[)	
+			Logic.AddGoodToStock(]]..IDFirstGood..[[, ]]..CostTable[2]..[[, ]]..(math.ceil(CostTable[3] * BCS.CurrentOriginalGoodKnockDownFactor))..[[)	
 		]])
 	end
 	if IDSecondGood == false then -- CityGood
 		if BCS.RefundCityGoods == true then
-			BCS.RefundKnockDownForCityGoods(CostTable[4], (Round(CostTable[5] * BCS.CurrentKnockDownFactor)))
+			BCS.RefundKnockDownForCityGoods(CostTable[4], (math.ceil(CostTable[5] * BCS.CurrentKnockDownFactor)))
 		end
 	else
 		GUI.SendScriptCommand([[
-			Logic.AddGoodToStock(]]..IDSecondGood..[[, ]]..CostTable[4]..[[, ]]..(Round(CostTable[5] * BCS.CurrentKnockDownFactor))..[[)	
+			Logic.AddGoodToStock(]]..IDSecondGood..[[, ]]..CostTable[4]..[[, ]]..(math.ceil(CostTable[5] * BCS.CurrentKnockDownFactor))..[[)	
 		]])
 	end
 	
@@ -759,14 +765,14 @@ BCS.OverwriteGetCostLogics = function()
 				return BCS.GetCostForWall(_SegmentType, _TurretType, _StartTurretX, _StartTurretY, _EndTurretX, _EndTurretY)
 			else
 				local Distance = BCS.CalculateVariableCosts(_StartTurretX, _StartTurretY, _EndTurretX, _EndTurretY)
-				return BCS.PalisadeCosts[1], math.floor(Distance * BCS.PalisadeCosts[2]), BCS.PalisadeCosts[3], math.floor(Distance * BCS.PalisadeCosts[4])
+				return BCS.PalisadeCosts[1], math.ceil(Distance * BCS.PalisadeCosts[2]), BCS.PalisadeCosts[3], math.ceil(Distance * BCS.PalisadeCosts[4])
 			end	
 		else -- Wall
 			if (BCS.WallCosts == nil) then
 				return BCS.GetCostForWall(_SegmentType, _TurretType, _StartTurretX, _StartTurretY, _EndTurretX, _EndTurretY)
 			else
 				local Distance = BCS.CalculateVariableCosts(_StartTurretX, _StartTurretY, _EndTurretX, _EndTurretY)
-				return BCS.WallCosts[1], math.floor(Distance * BCS.WallCosts[2]), BCS.WallCosts[3], math.floor(Distance * BCS.WallCosts[4])
+				return BCS.WallCosts[1], math.ceil(Distance * BCS.WallCosts[2]), BCS.WallCosts[3], math.ceil(Distance * BCS.WallCosts[4])
 			end		
 		end
 	end
@@ -782,8 +788,8 @@ BCS.OverwriteVariableCostBuildings = function()
 		else
 			local Meters = _Length / 100
 			local MetersPerUnit = Logic.GetRoadMetersPerRoadUnit()
-			local AmountFirstGood = math.floor(BCS.RoadCosts[2] * (Meters / MetersPerUnit))
-			local AmountSecondGood = math.floor(BCS.RoadCosts[4] * (Meters / MetersPerUnit))
+			local AmountFirstGood = math.ceil(BCS.RoadCosts[2] * (Meters / MetersPerUnit))
+			local AmountSecondGood = math.ceil(BCS.RoadCosts[4] * (Meters / MetersPerUnit))
 
 			if AmountFirstGood == 0 then
 				AmountFirstGood = 1
@@ -791,9 +797,8 @@ BCS.OverwriteVariableCostBuildings = function()
 			if AmountSecondGood == 0 then
 				AmountSecondGood = 1
 			end
-			
-		    GUI_Tooltip.TooltipCostsOnly({Goods.G_Stone, AmountFirstGood, BCS.RoadCosts[3], AmountSecondGood})
-			XGUIEng.ShowWidget("/InGame/Root/Normal/TooltipCostsOnly", 1)
+
+			BCS.ShowTooltipCostsOnly({Goods.G_Stone, AmountFirstGood, BCS.RoadCosts[3], AmountSecondGood})
 			
 			BCS.RoadMultiplier.First = AmountFirstGood;
 			BCS.RoadMultiplier.Second = AmountSecondGood;
@@ -818,16 +823,14 @@ BCS.OverwriteVariableCostBuildings = function()
 				BCS.GameCallBack_GUI_ConstructWallSegmentCountChanged(_SegmentType, _TurretType)
 			else
 				local Costs = {Logic.GetCostForWall(_SegmentType, _TurretType, StartTurretX, StartTurretY, EndTurretX, EndTurretY)}
-				GUI_Tooltip.TooltipCostsOnly(Costs)
-				XGUIEng.ShowWidget("/InGame/Root/Normal/TooltipCostsOnly", 1)
+				BCS.ShowTooltipCostsOnly(Costs)
 			end
 		else
 			if BCS.WallCosts == nil then
 				BCS.GameCallBack_GUI_ConstructWallSegmentCountChanged(_SegmentType, _TurretType)
 			else
 				local Costs = {Logic.GetCostForWall(_SegmentType, _TurretType, StartTurretX, StartTurretY, EndTurretX, EndTurretY)}
-				GUI_Tooltip.TooltipCostsOnly(Costs)
-				XGUIEng.ShowWidget("/InGame/Root/Normal/TooltipCostsOnly", 1)
+				BCS.ShowTooltipCostsOnly(Costs)
 			end
 		end
 	end
@@ -855,14 +858,91 @@ BCS.OverwriteVariableCostBuildings = function()
 	end
 end
 
+BCS.ShowTooltipCostsOnly = function(_Costs)
+
+	local TooltipContainerPath = "/InGame/Root/Normal/TooltipCostsOnly"
+	local TooltipContainer = XGUIEng.GetWidgetID(TooltipContainerPath)
+    local TooltipCostsContainer = XGUIEng.GetWidgetID(TooltipContainerPath .. "/Costs")
+	local TooltipCostsContainerPath = XGUIEng.GetWidgetPathByID(TooltipCostsContainer)
+	local Good1ContainerPath = TooltipCostsContainerPath .. "/1Good"
+	local Goods2ContainerPath = TooltipCostsContainerPath .. "/2Goods"
+	local NumberOfValidAmounts, Good1Path, Good2Path = 0, 0, 0
+	
+	-- Set Costs
+	for i = 2, #_Costs, 2 do
+		if _Costs[i] ~= 0 then
+			NumberOfValidAmounts = NumberOfValidAmounts + 1
+		end
+	end
+	
+	if NumberOfValidAmounts == 0 then
+		XGUIEng.ShowWidget(Good1ContainerPath, 0)
+		XGUIEng.ShowWidget(Goods2ContainerPath, 0)
+		return;
+	elseif NumberOfValidAmounts == 1 then
+		XGUIEng.ShowWidget(Good1ContainerPath, 1)
+		XGUIEng.ShowWidget(Goods2ContainerPath, 0)
+		Good1Path = Good1ContainerPath .. "/Good1Of1"
+	elseif NumberOfValidAmounts == 2 then
+		XGUIEng.ShowWidget(Good1ContainerPath, 0)
+		XGUIEng.ShowWidget(Goods2ContainerPath, 1)
+		Good1Path = Goods2ContainerPath .. "/Good1Of2"
+		Good2Path = Goods2ContainerPath .. "/Good2Of2"
+	elseif NumberOfValidAmounts > 2 then
+		GUI.AddNote("Debug: Invalid Costs table. Not more than 2 GoodTypes allowed.")
+	end
+	
+	local ContainerIndex = 1
+	
+	for i = 1, #_Costs, 2 do
+		if _Costs[i + 1] ~= 0 then
+			local CostsGoodType = _Costs[i]
+			local CostsGoodAmount = _Costs[i + 1]     
+			local IconWidget, AmountWidget
+            
+			if ContainerIndex == 1 then
+				IconWidget = Good1Path .. "/Icon"
+				AmountWidget = Good1Path .. "/Amount"
+			else
+				IconWidget = Good2Path .. "/Icon"
+				AmountWidget = Good2Path .. "/Amount"
+			end
+            
+			SetIcon(IconWidget, g_TexturePositions.Goods[CostsGoodType], 44)
+            
+			local PlayersGoodAmount = BCS.GetAmountOfGoodsInSettlement(CostsGoodType, GUI.GetPlayerID(), BCS.MarketplaceGoodsCount)
+			
+			if PlayersGoodAmount == nil then
+				PlayersGoodAmount = 0
+			end
+      
+			local Color = ""           
+			if PlayersGoodAmount < CostsGoodAmount then
+				Color = "{@script:ColorRed}"
+			end
+            
+			if CostsGoodAmount > 0 then
+				XGUIEng.SetText(AmountWidget, "{center}" .. Color .. CostsGoodAmount)
+			else
+				XGUIEng.SetText(AmountWidget, "")
+			end
+			
+			ContainerIndex = ContainerIndex + 1
+		end
+	end
+	
+	local TooltipContainerSizeWidgets = {TooltipCostsContainer}
+    GUI_Tooltip.SetPosition(TooltipContainer, TooltipContainerSizeWidgets, nil, nil)
+	XGUIEng.ShowWidget(TooltipContainerPath, 1)
+end
+
 BCS.OverwriteTooltipHandling = function()
 	function GUI_Tooltip.SetCosts(_TooltipCostsContainer, _Costs, _GoodsInSettlementBoolean)
 		local TooltipCostsContainerPath = XGUIEng.GetWidgetPathByID(_TooltipCostsContainer)
 		local Good1ContainerPath = TooltipCostsContainerPath .. "/1Good"
 		local Goods2ContainerPath = TooltipCostsContainerPath .. "/2Goods"
 		local NumberOfValidAmounts, Good1Path, Good2Path = 0, 0, 0
-		local UseBCSCosts, IsFestival = false, false
-		local CurrentState = GUI.GetCurrentStateID()
+		local UseBCSCosts = false
 		
 		local Name = XGUIEng.GetWidgetNameByID(XGUIEng.GetCurrentWidgetID())
 		if Name == "Street" and BCS.RoadCosts ~= nil then
@@ -874,7 +954,6 @@ BCS.OverwriteTooltipHandling = function()
 		elseif Name == "Wall" and BCS.WallCosts ~= nil then
 			_Costs = {BCS.WallCosts[1], -1, BCS.WallCosts[3], -1}	
 		elseif Name == "StartFestival" and BCS.CurrentFestivalCosts ~= nil then
-			IsFestival = true
 			UseBCSCosts = true
 		elseif Name == "PlaceField" then
 			local EntityType = Logic.GetEntityType(GUI.GetSelectedEntity())
@@ -893,9 +972,6 @@ BCS.OverwriteTooltipHandling = function()
 			if (CostTable ~= nil) then
 				UseBCSCosts = true
 			end
-		elseif (CurrentState == 2 or CurrentState == 5) then
-			-- 2 == "PlaceRoad" | 5 == "PlaceWall" -> GUI.GetCurrentStateName()
-			UseBCSCosts = true
 		else
 			local Entity = Entities[Name]
 			if Entity ~= 0 and Entity ~= nil then
@@ -950,15 +1026,11 @@ BCS.OverwriteTooltipHandling = function()
 				local PlayerID = GUI.GetPlayerID()
 				local PlayersGoodAmount
 				
-				-- Changed
+				-- Additions for BCS Handling
 				local ID = BCS.GetEntityIDToAddToOutStock(CostsGoodType)
-				local MarketGoodsCount = BCS.MarketplaceGoodsCount
-				if IsFestival == true then
-					MarketGoodsCount = false
-				end
 				
-				if (ID == false and UseBCSCosts == true) then
-					PlayersGoodAmount = BCS.GetAmountOfGoodsInSettlement(CostsGoodType, PlayerID, MarketGoodsCount)
+				if UseBCSCosts == true then
+					PlayersGoodAmount = BCS.GetAmountOfGoodsInSettlement(CostsGoodType, PlayerID, BCS.MarketplaceGoodsCount)
 				elseif _GoodsInSettlementBoolean == true then
 					PlayersGoodAmount = GetPlayerGoodsInSettlement(CostsGoodType, PlayerID, true)
 				else 
@@ -1022,8 +1094,8 @@ BCS.HandlePlacementModeUpdate = function(_currentUpgradeCategory)
 	elseif (LastPlaced == true) and (BCS.TrailCosts ~= nil) then --Trail
 		local CurrentAmountOfFirstGood, CurrentAmountOfSecondGood = BCS.CalculateStreetCosts()	
 		
-		GUI_Tooltip.TooltipCostsOnly({BCS.TrailCosts[1], CurrentAmountOfFirstGood, BCS.TrailCosts[3], CurrentAmountOfSecondGood})
-		XGUIEng.ShowWidget("/InGame/Root/Normal/TooltipCostsOnly", 1) -- Trail has no costs in original game, so we have to show the tooltip manually
+		BCS.ShowTooltipCostsOnly({BCS.TrailCosts[1], CurrentAmountOfFirstGood, BCS.TrailCosts[3], CurrentAmountOfSecondGood})
+		-- Trail has no costs in original game, so we have to show the tooltip manually
 		
 		BCS.StreetMultiplier.First = CurrentAmountOfFirstGood
 		BCS.StreetMultiplier.Second = CurrentAmountOfSecondGood
@@ -1266,8 +1338,8 @@ BCS.CalculateStreetCosts = function()
 	local posX, posY = GUI.Debug_GetMapPositionUnderMouse()
 	if BCS.StreetMultiplier.CurrentX ~= 1 and BCS.StreetMultiplier.CurrentY ~= 1 then
 		local Distance = BCS.CalculateVariableCosts(posX, posY, BCS.StreetMultiplier.CurrentX, BCS.StreetMultiplier.CurrentY)
-		local FirstCostDistance = math.floor(Distance * BCS.TrailCosts[2])
-		local SecondCostDistance = math.floor(Distance * BCS.TrailCosts[4])
+		local FirstCostDistance = math.ceil(Distance * BCS.TrailCosts[2])
+		local SecondCostDistance = math.ceil(Distance * BCS.TrailCosts[4])
 		if FirstCostDistance < 1 then
 			FirstCostDistance = 1
 		end
@@ -1329,7 +1401,7 @@ BCS.FestivalCostsHandler = function()
 			return BCS.GetFestivalCost(_PlayerID, _FestivalIndex)
 		else
 			local Costs = {BCS.GetFestivalCost(_PlayerID, _FestivalIndex)}
-			return BCS.CurrentFestivalCosts[1], Round(Costs[2] * BCS.CurrentFestivalCosts[2]), BCS.CurrentFestivalCosts[3], BCS.CurrentFestivalCosts[4]
+			return BCS.CurrentFestivalCosts[1], math.ceil(Costs[2] * BCS.CurrentFestivalCosts[2]), BCS.CurrentFestivalCosts[3], BCS.CurrentFestivalCosts[4]
 		end
 	end
 
@@ -1354,7 +1426,7 @@ BCS.FestivalCostsHandler = function()
 				Sound.FXPlay2DSound("ui\\menu_click")
 				
 				local Type, OriginalAmount = BCS.GetFestivalCost(PlayerID, _FestivalIndex)
-				local Amount = Round(OriginalAmount * BCS.CurrentFestivalCosts[2])
+				local Amount = math.ceil(OriginalAmount * BCS.CurrentFestivalCosts[2])
 				
 				Amount = Amount - OriginalAmount
 				
@@ -1394,7 +1466,7 @@ BCS.AreFestivalResourcesAvailable = function(_PlayerID, _FestivalIndex)
 		AmountOfSecondGood = Logic.GetAmountOnOutStockByGoodType(CurrentID, BCS.CurrentFestivalCosts[3])
 	end
 	
-	if (AmountOfFirstGood < Round(Costs[2] * BCS.CurrentFestivalCosts[2]) or AmountOfSecondGood < BCS.CurrentFestivalCosts[4]) then
+	if (AmountOfFirstGood < math.ceil(Costs[2] * BCS.CurrentFestivalCosts[2]) or AmountOfSecondGood < BCS.CurrentFestivalCosts[4]) then
 		return false
 	else
 		return true
