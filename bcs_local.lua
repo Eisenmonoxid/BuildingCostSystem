@@ -41,22 +41,22 @@ BCS.CurrentFestivalCosts = nil
 
 BCS.OverlayWidget = "/EndScreen"
 BCS.OverlayIsCurrentlyShown = false
-BCS.CurrentBCSVersion = "3.9 - 27.03.2023 23:05"
+BCS.CurrentBCSVersion = "3.9 - 28.03.2023 11:53"
 
 ----------------------------------------------------------------------------------------------------------------------
 --These functions are exported to Userspace---------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------
 
 BCS.EditBuildingCosts = function(_upgradeCategory, _originalCostAmount, _newGood, _newGoodAmount)
+	-- Check for unloaded script
+	assert(type(BCS.GetEntityTypeFullCost) == "function")
+
 	if _originalCostAmount == nil then
 		BCS.UpdateCostsInCostTable(_upgradeCategory, nil)
 		return;
 	end
 	
-	--Check for Unloaded Script
-	assert(type(BCS.GetEntityTypeFullCost) == "function")
-	
-	--Check for Invalid GoodAmount
+	-- Check for invalid GoodAmount
 	assert(_newGoodAmount >= 1)
 	local AmountOfTypes, FirstBuildingType = Logic.GetBuildingTypesInUpgradeCategory(_upgradeCategory)
 	local Costs = {BCS.GetEntityTypeFullCost(FirstBuildingType)}
@@ -117,7 +117,7 @@ BCS.EditFestivalCosts = function(_originalCostFactor, _secondGood, _newGoodFacto
 		BCS.CurrentFestivalCosts = nil
 		return;
 	end
-	assert(_originalCostFactor > 1)
+	assert(_originalCostFactor >= 1)
 	BCS.CurrentFestivalCosts = {Goods.G_Gold, _originalCostFactor, _secondGood, _newGoodFactor}
 end
 
@@ -196,6 +196,8 @@ BCS.AddBuildingToIDTable = function(_EntityID)
 	local FGood, FAmount, SGood, SAmount = Logic.GetEntityTypeFullCost(Logic.GetEntityType(_EntityID))
 	if FGood ~= nil and FGood ~= 0 then
 		table.insert(BCS.BuildingIDTable, {_EntityID, FGood, FAmount, SGood, SAmount})
+	else
+		Framework.WriteToLog("BCS: AddBuildingToIDTable() -> FGood was nil! Nothing was added!")
 	end
 end
 
@@ -757,14 +759,14 @@ BCS.OverwriteGetCostLogics = function()
 				return BCS.GetCostForWall(_SegmentType, _TurretType, _StartTurretX, _StartTurretY, _EndTurretX, _EndTurretY)
 			else
 				local Distance = BCS.CalculateVariableCosts(_StartTurretX, _StartTurretY, _EndTurretX, _EndTurretY)
-				return BCS.PalisadeCosts[1], math.floor(Distance*BCS.PalisadeCosts[2]), BCS.PalisadeCosts[3], math.floor(Distance*BCS.PalisadeCosts[4])
+				return BCS.PalisadeCosts[1], math.floor(Distance * BCS.PalisadeCosts[2]), BCS.PalisadeCosts[3], math.floor(Distance * BCS.PalisadeCosts[4])
 			end	
 		else -- Wall
 			if (BCS.WallCosts == nil) then
 				return BCS.GetCostForWall(_SegmentType, _TurretType, _StartTurretX, _StartTurretY, _EndTurretX, _EndTurretY)
 			else
 				local Distance = BCS.CalculateVariableCosts(_StartTurretX, _StartTurretY, _EndTurretX, _EndTurretY)
-				return BCS.WallCosts[1], math.floor(Distance*BCS.WallCosts[2]), BCS.WallCosts[3], math.floor(Distance*BCS.WallCosts[4])
+				return BCS.WallCosts[1], math.floor(Distance * BCS.WallCosts[2]), BCS.WallCosts[3], math.floor(Distance * BCS.WallCosts[4])
 			end		
 		end
 	end
@@ -871,8 +873,9 @@ BCS.OverwriteTooltipHandling = function()
 			_Costs = {BCS.PalisadeCosts[1], -1, BCS.PalisadeCosts[3], -1}		
 		elseif Name == "Wall" and BCS.WallCosts ~= nil then
 			_Costs = {BCS.WallCosts[1], -1, BCS.WallCosts[3], -1}	
-		elseif (Name == "StartFestival" and BCS.CurrentFestivalCosts ~= nil) then
+		elseif Name == "StartFestival" and BCS.CurrentFestivalCosts ~= nil then
 			IsFestival = true
+			UseBCSCosts = true
 		elseif Name == "PlaceField" then
 			local EntityType = Logic.GetEntityType(GUI.GetSelectedEntity())
 			local UpgradeCategory
