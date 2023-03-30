@@ -41,7 +41,7 @@ BCS.CurrentFestivalCosts = nil
 
 BCS.OverlayWidget = "/EndScreen"
 BCS.OverlayIsCurrentlyShown = false
-BCS.CurrentBCSVersion = "4.2 - 28.03.2023 13:46"
+BCS.CurrentBCSVersion = "4.2 - 30.03.2023 16:15"
 
 ----------------------------------------------------------------------------------------------------------------------
 --These functions are exported to Userspace---------------------------------------------------------------------------
@@ -207,7 +207,10 @@ BCS.RemoveCostsFromOutStock = function(_upgradeCategory)
 	end
 	
 	if Costs[3] ~= nil and Costs[3] ~= 0 then
-		local SAmountToRemove = (Costs[4] - OriginalCosts[4] or 0)
+		if OriginalCosts[4] == nil then
+			OriginalCosts[4] = 0;
+		end
+		local SAmountToRemove = (Costs[4] - OriginalCosts[4])
 		
 		CurrentID = BCS.GetEntityIDToAddToOutStock(Costs[3])
 		if CurrentID == false then
