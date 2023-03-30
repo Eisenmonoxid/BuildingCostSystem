@@ -1,5 +1,6 @@
 ----------------------------------------------------------------------------------------------------------------------
 -----------------------------**BuildingCostSystem (BCS) Created By Eisenmonoxid**-------------------------------------
+-----------------**Find the newest version here: https://github.com/Eisenmonoxid/S6CostSystem**-----------------------
 ----------------------------------------------------------------------------------------------------------------------
 BCS = {}
 
@@ -22,8 +23,8 @@ BCS.TrailCosts = nil
 BCS.PalisadeCosts = nil
 BCS.WallCosts = nil
 
-BCS.IsCurrentBuildingInCostTable = false
-BCS.CurrentExpectedBuildingType = nil
+BCS.IsCurrentBuildingInCostTable = false -- Set at BuildClicked, true in hovering mode, reset at AfterBuildingPlacement
+BCS.CurrentExpectedBuildingType = nil -- Used for KnockDown saving
 BCS.CurrentKnockDownFactor = 0.5 -- Half the new good cost is refunded at knock down
 BCS.CurrentOriginalGoodKnockDownFactor = 0.2
 BCS.IsInWallOrPalisadeContinueState = false
@@ -41,10 +42,10 @@ BCS.CurrentFestivalCosts = nil
 
 BCS.OverlayWidget = "/EndScreen"
 BCS.OverlayIsCurrentlyShown = false
-BCS.CurrentBCSVersion = "4.2 - 30.03.2023 16:15"
+BCS.CurrentBCSVersion = "4.2 - 30.03.2023 16:31"
 
 ----------------------------------------------------------------------------------------------------------------------
---These functions are exported to Userspace---------------------------------------------------------------------------
+--These functions are exported to userspace---------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------
 
 BCS.EditBuildingCosts = function(_upgradeCategory, _originalCostAmount, _newGood, _newGoodAmount)
@@ -138,7 +139,7 @@ end
 		The following methods handle the table management. There are two main tables used: 
 		'BCS.BuildingCosts' and 'BCS.BuildingIDTable'.
 		
-		The first one is used to store every UpgradeCategory and the corresponding new costs.
+		The first one has the UpgradeCategory as Key and the corresponding new costs as Value.
 		The second one stores every individual entityID with the costs that were used to build the entity.
 		
 		This second table allows us to refund the costs for every building individually, even if the costs
@@ -183,7 +184,7 @@ BCS.AddBuildingToIDTable = function(_entityID)
 end
 
 ----------------------------------------------------------------------------------------------------------------------
---These functions handle the Ingame Resource Management---------------------------------------------------------------
+--These functions handle the ingame resource management---------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------
 
 BCS.RemoveCostsFromOutStock = function(_upgradeCategory)
@@ -620,6 +621,7 @@ BCS.OverwriteBuildClicked = function()
 			BCS.CurrentWallTypeForClimate = _BuildingType
 		end
 		BCS.ResetWallTurretPositions()
+		BCS.SetAwaitingVariable(false)
 		g_LastPlacedParam = _BuildingType
 		BCS.IsInWallOrPalisadeContinueState = false
 		BCS.BuildWallClicked(_BuildingType)
