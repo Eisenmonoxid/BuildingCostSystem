@@ -41,7 +41,7 @@ BCS.CurrentFestivalCosts = nil
 
 BCS.OverlayWidget = "/EndScreen"
 BCS.OverlayIsCurrentlyShown = false
-BCS.CurrentBCSVersion = "4.1 - 28.03.2023 13:46"
+BCS.CurrentBCSVersion = "4.2 - 28.03.2023 13:46"
 
 ----------------------------------------------------------------------------------------------------------------------
 --These functions are exported to Userspace---------------------------------------------------------------------------
@@ -50,25 +50,21 @@ BCS.CurrentBCSVersion = "4.1 - 28.03.2023 13:46"
 BCS.EditBuildingCosts = function(_upgradeCategory, _originalCostAmount, _newGood, _newGoodAmount)
 	-- Check for unloaded script
 	assert(type(BCS.GetEntityTypeFullCost) == "function")
+	-- Check for valid UpgradeCategory (Beautification_VictoryColumn == 97, the highest Category)
+	assert(_upgradeCategory > 0 and _upgradeCategory <= UpgradeCategories.Beautification_VictoryColumn)
 
 	if _originalCostAmount == nil then
-		BCS.UpdateCostsInCostTable(_upgradeCategory, nil)
+		BCS.BuildingCosts[_upgradeCategory] = nil
 		return;
 	end
 	
 	-- Check for invalid GoodAmount
-	assert(_newGoodAmount >= 1)
 	local AmountOfTypes, FirstBuildingType = Logic.GetBuildingTypesInUpgradeCategory(_upgradeCategory)
 	local Costs = {BCS.GetEntityTypeFullCost(FirstBuildingType)}
 	assert(_originalCostAmount >= Costs[2])
-	
-	local CurrentBuildingCost = {_upgradeCategory, _originalCostAmount, _newGood, _newGoodAmount}
-	local CostTable = BCS.GetCostByCostTable(_upgradeCategory);
-	if (CostTable == nil) then
-		table.insert(BCS.BuildingCosts, CurrentBuildingCost)
-	else
-		BCS.UpdateCostsInCostTable(_upgradeCategory, CurrentBuildingCost)
-	end
+
+	-- Insert/Update table entry
+	BCS.BuildingCosts[_upgradeCategory] = {_originalCostAmount, _newGood, _newGoodAmount}
 end
 
 BCS.EditRoadCosts = function(_originalCostFactor, _newGood, _newGoodFactor)
@@ -112,7 +108,8 @@ end
 
 BCS.SetKnockDownFactor = function(_factorOriginalGood, _factorNewGood) --0.5 is half of the cost
 	assert(type(BCS.GetEntityTypeFullCost) == "function")
-	assert(_factorOriginalGood < 1 and _factorNewGood < 1)
+	assert(_factorOriginalGood <= 1 and _factorNewGood <= 1)
+	
 	BCS.CurrentKnockDownFactor = _factorNewGood
 	BCS.CurrentOriginalGoodKnockDownFactor = _factorOriginalGood
 end
@@ -123,6 +120,7 @@ BCS.EditFestivalCosts = function(_originalCostFactor, _secondGood, _newGoodFacto
 		BCS.CurrentFestivalCosts = nil
 		return;
 	end
+	
 	assert(_originalCostFactor >= 1)
 	BCS.CurrentFestivalCosts = {Goods.G_Gold, _originalCostFactor, _secondGood, _newGoodFactor}
 end
@@ -153,57 +151,34 @@ end
 ]]--
 -------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-BCS.GetCostByCostTable = function(_buildingType)
-	if _buildingType == nil or _buildingType == 0 then
-		return nil;
-	end
-
-	for Type, CurrentCostTable in pairs(BCS.BuildingCosts) do 
-		if (CurrentCostTable[1] == _buildingType) then
-			return CurrentCostTable;
-		end
+BCS.GetCostByCostTable = function(_upgradeCategory)
+	if _upgradeCategory == nil or _upgradeCategory == 0 then
+		return;
 	end
 	
-	return nil
+	return BCS.BuildingCosts[_upgradeCategory];
 end
 
-BCS.UpdateCostsInCostTable = function(_buildingType, _newCostTable)
-	if _buildingType == nil or _buildingType == 0 then
-		return nil;
+BCS.GetCostByBuildingIDTable = function(_entityID)
+	if _entityID == nil or _entityID == 0 then
+		return;
 	end
 	
-	for Type, CurrentCostTable in pairs(BCS.BuildingCosts) do 
-		if (CurrentCostTable[1] == _buildingType) then
-			if _newCostTable == nil then
-				BCS.BuildingCosts[Type] = nil
-			else
-				BCS.BuildingCosts[Type] = {_newCostTable[1], _newCostTable[2], _newCostTable[3], _newCostTable[4]}
-			end
-			break;
-		end
-	end
-end
-
-BCS.GetCostByBuildingIDTable = function(_EntityID)
-	if _EntityID == nil or _EntityID == 0 then
-		return nil;
-	end
-
 	for Type, CurrentCostTable in pairs(BCS.BuildingIDTable) do 
-		if (CurrentCostTable[1] == _EntityID) then
+		if (CurrentCostTable[1] == _entityID) then
 			return CurrentCostTable, Type;
 		end
 	end
 	
-	return nil
+	return nil;
 end
 
-BCS.AddBuildingToIDTable = function(_EntityID)
-	local FGood, FAmount, SGood, SAmount = Logic.GetEntityTypeFullCost(Logic.GetEntityType(_EntityID))
+BCS.AddBuildingToIDTable = function(_entityID)
+	local FGood, FAmount, SGood, SAmount = Logic.GetEntityTypeFullCost(Logic.GetEntityType(_entityID))
 	if FGood ~= nil and FGood ~= 0 then
-		table.insert(BCS.BuildingIDTable, {_EntityID, FGood, FAmount, SGood, SAmount})
+		table.insert(BCS.BuildingIDTable, {_entityID, FGood, FAmount, SGood, SAmount})
 	else
-		Framework.WriteToLog("BCS: AddBuildingToIDTable() -> FGood was nil! Nothing was added!")
+		Framework.WriteToLog("BCS: AddBuildingToIDTable() -> FGood was nil/0! Nothing was added!")
 	end
 end
 
@@ -211,40 +186,40 @@ end
 --These functions handle the Ingame Resource Management---------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------
 
-BCS.RemoveCostsFromOutStock = function(_buildingType)
+BCS.RemoveCostsFromOutStock = function(_upgradeCategory)
 	local PlayerID = GUI.GetPlayerID()
-	local AmountOfTypes, FirstBuildingType = Logic.GetBuildingTypesInUpgradeCategory(_buildingType)
-	local FGood, FAmount, SGood, SAmount = Logic.GetEntityTypeFullCost(FirstBuildingType)
-	local OrigFGood, OrigFAmount, OrigSGood, OrigSAmount = BCS.GetEntityTypeFullCost(FirstBuildingType)
+	local AmountOfTypes, FirstBuildingType = Logic.GetBuildingTypesInUpgradeCategory(_upgradeCategory)
+	local Costs = {Logic.GetEntityTypeFullCost(FirstBuildingType)}
+	local OriginalCosts = {BCS.GetEntityTypeFullCost(FirstBuildingType)}
 	
-	if OrigSAmount == nil then OrigSAmount = 0 end
-	
-	local FAmountToRemove = (FAmount - OrigFAmount)
-	local SAmountToRemove = (SAmount - OrigSAmount)
-	local FGoodCurrentAmount, SGoodCurrentAmount
+	local FAmountToRemove = (Costs[2] - OriginalCosts[2])
 
-	local CurrentID = BCS.GetEntityIDToAddToOutStock(FGood)
+	local CurrentID = BCS.GetEntityIDToAddToOutStock(Costs[1])
 	if CurrentID == false then
-		BCS.RemoveCostsFromOutStockCityGoods(FGood, FAmountToRemove, PlayerID, BCS.MarketplaceGoodsCount)
+		BCS.RemoveCostsFromOutStockCityGoods(Costs[1], FAmountToRemove, PlayerID, BCS.MarketplaceGoodsCount)
 	else
-		FGoodCurrentAmount = Logic.GetAmountOnOutStockByGoodType(CurrentID, FGood)
+		local FGoodCurrentAmount = Logic.GetAmountOnOutStockByGoodType(CurrentID, Costs[1])
 		if FGoodCurrentAmount < FAmountToRemove then
-			GUI.RemoveGoodFromStock(CurrentID, FGood, FGoodCurrentAmount)
+			GUI.RemoveGoodFromStock(CurrentID, Costs[1], FGoodCurrentAmount)
 		else
-			GUI.RemoveGoodFromStock(CurrentID, FGood, FAmountToRemove)
+			GUI.RemoveGoodFromStock(CurrentID, Costs[1], FAmountToRemove)
 		end
 	end
 	
-	CurrentID = BCS.GetEntityIDToAddToOutStock(SGood)
-	if CurrentID == false then
-		BCS.RemoveCostsFromOutStockCityGoods(SGood, SAmountToRemove, PlayerID, BCS.MarketplaceGoodsCount)
-	else
-		SGoodCurrentAmount = Logic.GetAmountOnOutStockByGoodType(CurrentID, SGood)
-		if SGoodCurrentAmount < SAmountToRemove then
-			GUI.RemoveGoodFromStock(CurrentID, SGood, SGoodCurrentAmount)
+	if Costs[3] ~= nil and Costs[3] ~= 0 then
+		local SAmountToRemove = (Costs[4] - OriginalCosts[4] or 0)
+		
+		CurrentID = BCS.GetEntityIDToAddToOutStock(Costs[3])
+		if CurrentID == false then
+			BCS.RemoveCostsFromOutStockCityGoods(Costs[3], SAmountToRemove, PlayerID, BCS.MarketplaceGoodsCount)
 		else
-			GUI.RemoveGoodFromStock(CurrentID, SGood, SAmountToRemove)
-		end	
+			local SGoodCurrentAmount = Logic.GetAmountOnOutStockByGoodType(CurrentID, Costs[3])
+			if SGoodCurrentAmount < SAmountToRemove then
+				GUI.RemoveGoodFromStock(CurrentID, Costs[3], SGoodCurrentAmount)
+			else
+				GUI.RemoveGoodFromStock(CurrentID, Costs[3], SAmountToRemove)
+			end	
+		end
 	end
 end
 
@@ -352,11 +327,13 @@ BCS.RemoveVariableCostsFromOutStock = function(_type)
 		GUI.RemoveGoodFromStock(CurrentID, CostTable[1], Costs[2] - OriginalCosts)
 	end
 	
-	CurrentID = BCS.GetEntityIDToAddToOutStock(CostTable[3])
-	if CurrentID == false then
-		BCS.RemoveCostsFromOutStockCityGoods(CostTable[3], Costs[4], PlayerID, BCS.MarketplaceGoodsCount)
-	else
-		GUI.RemoveGoodFromStock(CurrentID, CostTable[3], Costs[4])
+	if CostTable[3] ~= nil and CostTable[3] ~= 0 then
+		CurrentID = BCS.GetEntityIDToAddToOutStock(CostTable[3])
+		if CurrentID == false then
+			BCS.RemoveCostsFromOutStockCityGoods(CostTable[3], Costs[4], PlayerID, BCS.MarketplaceGoodsCount)
+		else
+			GUI.RemoveGoodFromStock(CurrentID, CostTable[3], Costs[4])
+		end
 	end
 end
 
@@ -478,7 +455,7 @@ BCS.GetEntityIDToAddToOutStock = function(_goodType)
 		return false	
 	end
 	
-	return nil
+	return nil -- This should never happen
 end
 
 BCS.GetLastPlacedBuildingIDForKnockDown = function(_EntityID)
@@ -523,7 +500,7 @@ end
 
 BCS.HasCurrentBuildingOwnBuildingCosts = function(_upgradeCategory)
 	local CostTable = BCS.GetCostByCostTable(_upgradeCategory)
-	if (CostTable == nil) then
+	if (CostTable == nil or CostTable == 0) then
 		BCS.SetAwaitingVariable(false)
 		Framework.WriteToLog("BCS: Building NOT Custom with Category: "..tostring(_upgradeCategory))
 	else
@@ -601,15 +578,15 @@ BCS.OverwriteAfterPlacement = function()
 		elseif g_LastPlacedParam == BCS.CurrentWallTypeForClimate then --Wall
 			if (BCS.WallCosts ~= nil) then
 				BCS.RemoveVariableCostsFromOutStock(2)
-			end
-			
-			if BCS.IsCurrentStateABuildingState(GUI.GetCurrentStateID()) == true then
-				GUI.CancelState()
-			end
-			
+				
+				if BCS.IsCurrentStateABuildingState(GUI.GetCurrentStateID()) == true then
+					GUI.CancelState()
+				end
+			end			
 		end
 		
 		BCS.IsInWallOrPalisadeContinueState = false
+		BCS.ResetWallTurretPositions()
         BCS.GameCallback_GUI_AfterWallPlacement();
     end
 end
@@ -703,7 +680,7 @@ BCS.OverwriteBuildClicked = function()
 		
 		BCS.ContinueWallClicked()
 	end
-	
+
 	if BCS.ContinueWallMouseOver == nil then
 		BCS.ContinueWallMouseOver = GUI_BuildingButtons.ContinueWallMouseOver;
 	end	
@@ -747,12 +724,12 @@ BCS.OverwriteGetCostLogics = function()
 		BCS.GetEntityTypeFullCost = Logic.GetEntityTypeFullCost;
 	end	
 	Logic.GetEntityTypeFullCost = function(_buildingType)
-		local CostTable = BCS.GetCostByCostTable(Logic.GetUpgradeCategoryByBuildingType(_buildingType));
-		if (CostTable == nil) then
-			return BCS.GetEntityTypeFullCost(_buildingType)
+		local OriginalCosts = {BCS.GetEntityTypeFullCost(_buildingType)}
+		local Costs = BCS.GetCostByCostTable(Logic.GetUpgradeCategoryByBuildingType(_buildingType))
+		if (Costs == nil or Costs == 0) then
+			return OriginalCosts;
 		else
-			local Costs = {BCS.GetEntityTypeFullCost(_buildingType)}
-			return Costs[1], CostTable[2], CostTable[3], CostTable[4]
+			return OriginalCosts[1], Costs[1], Costs[2], Costs[3];
 		end
 	end
 	
@@ -859,78 +836,11 @@ BCS.OverwriteVariableCostBuildings = function()
 end
 
 BCS.ShowTooltipCostsOnly = function(_Costs)
-
-	local TooltipContainerPath = "/InGame/Root/Normal/TooltipCostsOnly"
-	local TooltipContainer = XGUIEng.GetWidgetID(TooltipContainerPath)
+    local TooltipContainerPath = "/InGame/Root/Normal/TooltipCostsOnly"
+    local TooltipContainer = XGUIEng.GetWidgetID(TooltipContainerPath)
     local TooltipCostsContainer = XGUIEng.GetWidgetID(TooltipContainerPath .. "/Costs")
-	local TooltipCostsContainerPath = XGUIEng.GetWidgetPathByID(TooltipCostsContainer)
-	local Good1ContainerPath = TooltipCostsContainerPath .. "/1Good"
-	local Goods2ContainerPath = TooltipCostsContainerPath .. "/2Goods"
-	local NumberOfValidAmounts, Good1Path, Good2Path = 0, 0, 0
-	
-	-- Set Costs
-	for i = 2, #_Costs, 2 do
-		if _Costs[i] ~= 0 then
-			NumberOfValidAmounts = NumberOfValidAmounts + 1
-		end
-	end
-	
-	if NumberOfValidAmounts == 0 then
-		XGUIEng.ShowWidget(Good1ContainerPath, 0)
-		XGUIEng.ShowWidget(Goods2ContainerPath, 0)
-		return;
-	elseif NumberOfValidAmounts == 1 then
-		XGUIEng.ShowWidget(Good1ContainerPath, 1)
-		XGUIEng.ShowWidget(Goods2ContainerPath, 0)
-		Good1Path = Good1ContainerPath .. "/Good1Of1"
-	elseif NumberOfValidAmounts == 2 then
-		XGUIEng.ShowWidget(Good1ContainerPath, 0)
-		XGUIEng.ShowWidget(Goods2ContainerPath, 1)
-		Good1Path = Goods2ContainerPath .. "/Good1Of2"
-		Good2Path = Goods2ContainerPath .. "/Good2Of2"
-	elseif NumberOfValidAmounts > 2 then
-		GUI.AddNote("Debug: Invalid Costs table. Not more than 2 GoodTypes allowed.")
-	end
-	
-	local ContainerIndex = 1
-	
-	for i = 1, #_Costs, 2 do
-		if _Costs[i + 1] ~= 0 then
-			local CostsGoodType = _Costs[i]
-			local CostsGoodAmount = _Costs[i + 1]     
-			local IconWidget, AmountWidget
-            
-			if ContainerIndex == 1 then
-				IconWidget = Good1Path .. "/Icon"
-				AmountWidget = Good1Path .. "/Amount"
-			else
-				IconWidget = Good2Path .. "/Icon"
-				AmountWidget = Good2Path .. "/Amount"
-			end
-            
-			SetIcon(IconWidget, g_TexturePositions.Goods[CostsGoodType], 44)
-            
-			local PlayersGoodAmount = BCS.GetAmountOfGoodsInSettlement(CostsGoodType, GUI.GetPlayerID(), BCS.MarketplaceGoodsCount)
-			
-			if PlayersGoodAmount == nil then
-				PlayersGoodAmount = 0
-			end
-      
-			local Color = ""           
-			if PlayersGoodAmount < CostsGoodAmount then
-				Color = "{@script:ColorRed}"
-			end
-            
-			if CostsGoodAmount > 0 then
-				XGUIEng.SetText(AmountWidget, "{center}" .. Color .. CostsGoodAmount)
-			else
-				XGUIEng.SetText(AmountWidget, "")
-			end
-			
-			ContainerIndex = ContainerIndex + 1
-		end
-	end
-	
+
+	BCS.SetCustomToolTipCosts(TooltipCostsContainer, _Costs, false, true)
 	local TooltipContainerSizeWidgets = {TooltipCostsContainer}
     GUI_Tooltip.SetPosition(TooltipContainer, TooltipContainerSizeWidgets, nil, nil)
 	XGUIEng.ShowWidget(TooltipContainerPath, 1)
@@ -938,10 +848,6 @@ end
 
 BCS.OverwriteTooltipHandling = function()
 	function GUI_Tooltip.SetCosts(_TooltipCostsContainer, _Costs, _GoodsInSettlementBoolean)
-		local TooltipCostsContainerPath = XGUIEng.GetWidgetPathByID(_TooltipCostsContainer)
-		local Good1ContainerPath = TooltipCostsContainerPath .. "/1Good"
-		local Goods2ContainerPath = TooltipCostsContainerPath .. "/2Goods"
-		local NumberOfValidAmounts, Good1Path, Good2Path = 0, 0, 0
 		local UseBCSCosts = false
 		
 		local Name = XGUIEng.GetWidgetNameByID(XGUIEng.GetCurrentWidgetID())
@@ -981,101 +887,107 @@ BCS.OverwriteTooltipHandling = function()
 				end
 			end
 		end
-				
-		for i = 2, #_Costs, 2 do
-			if _Costs[i] ~= 0 then
-				NumberOfValidAmounts = NumberOfValidAmounts + 1
+			
+		BCS.SetCustomToolTipCosts(_TooltipCostsContainer, _Costs, _GoodsInSettlementBoolean, UseBCSCosts)
+	end
+end
+
+BCS.SetCustomToolTipCosts = function(_TooltipCostsContainer, _Costs, _GoodsInSettlementBoolean, _UseBCSCosts)
+	local TooltipCostsContainerPath = XGUIEng.GetWidgetPathByID(_TooltipCostsContainer)
+	local Good1ContainerPath = TooltipCostsContainerPath .. "/1Good"
+	local Goods2ContainerPath = TooltipCostsContainerPath .. "/2Goods"
+	local NumberOfValidAmounts, Good1Path, Good2Path = 0, 0, 0
+	
+	for i = 2, #_Costs, 2 do
+		if _Costs[i] ~= 0 then
+			NumberOfValidAmounts = NumberOfValidAmounts + 1
+		end
+	end
+
+	if NumberOfValidAmounts == 0 then
+		XGUIEng.ShowWidget(Good1ContainerPath, 0)
+		XGUIEng.ShowWidget(Goods2ContainerPath, 0)
+		return;
+	elseif NumberOfValidAmounts == 1 then
+		XGUIEng.ShowWidget(Good1ContainerPath, 1)
+		XGUIEng.ShowWidget(Goods2ContainerPath, 0)
+		Good1Path = Good1ContainerPath .. "/Good1Of1"
+	elseif NumberOfValidAmounts == 2 then
+		XGUIEng.ShowWidget(Good1ContainerPath, 0)
+		XGUIEng.ShowWidget(Goods2ContainerPath, 1)
+		Good1Path = Goods2ContainerPath .. "/Good1Of2"
+		Good2Path = Goods2ContainerPath .. "/Good2Of2"
+	elseif NumberOfValidAmounts > 2 then
+		GUI.AddNote("Debug: Invalid Costs table. Not more than 2 GoodTypes allowed.")
+	end
+
+	local ContainerIndex = 1
+
+	for i = 1, #_Costs, 2 do
+		if _Costs[i + 1] ~= 0 then
+			local CostsGoodType = _Costs[i]
+			local CostsGoodAmount = _Costs[i + 1]     
+			local IconWidget, AmountWidget
+            
+			if ContainerIndex == 1 then
+				IconWidget = Good1Path .. "/Icon"
+				AmountWidget = Good1Path .. "/Amount"
+			else
+				IconWidget = Good2Path .. "/Icon"
+				AmountWidget = Good2Path .. "/Amount"
 			end
-		end
-
-		if NumberOfValidAmounts == 0 then
-			XGUIEng.ShowWidget(Good1ContainerPath, 0)
-			XGUIEng.ShowWidget(Goods2ContainerPath, 0)
-			return
-		elseif NumberOfValidAmounts == 1 then
-			XGUIEng.ShowWidget(Good1ContainerPath, 1)
-			XGUIEng.ShowWidget(Goods2ContainerPath, 0)
-			Good1Path = Good1ContainerPath .. "/Good1Of1"
-		elseif NumberOfValidAmounts == 2 then
-			XGUIEng.ShowWidget(Good1ContainerPath, 0)
-			XGUIEng.ShowWidget(Goods2ContainerPath, 1)
-			Good1Path = Goods2ContainerPath .. "/Good1Of2"
-			Good2Path = Goods2ContainerPath .. "/Good2Of2"
-		elseif NumberOfValidAmounts > 2 then
-			GUI.AddNote("Debug: Invalid Costs table. Not more than 2 GoodTypes allowed.")
-		end
-
-		local ContainerIndex = 1
-
-		for i = 1, #_Costs, 2 do
-			if _Costs[i + 1] ~= 0 then
-				local CostsGoodType = _Costs[i]
-				local CostsGoodAmount = _Costs[i + 1]     
-				local IconWidget, AmountWidget
             
-				if ContainerIndex == 1 then
-					IconWidget = Good1Path .. "/Icon"
-					AmountWidget = Good1Path .. "/Amount"
+			SetIcon(IconWidget, g_TexturePositions.Goods[CostsGoodType], 44)
+            
+			local PlayerID = GUI.GetPlayerID()
+			local PlayersGoodAmount
+			local ID = BCS.GetEntityIDToAddToOutStock(CostsGoodType)
+				
+			if _UseBCSCosts == true then
+				PlayersGoodAmount = BCS.GetAmountOfGoodsInSettlement(CostsGoodType, PlayerID, BCS.MarketplaceGoodsCount)
+			elseif _GoodsInSettlementBoolean == true then
+				PlayersGoodAmount = GetPlayerGoodsInSettlement(CostsGoodType, PlayerID, true)
+			else 
+				local IsInOutStock, BuildingID           
+				if CostsGoodType == Goods.G_Gold then
+					BuildingID = Logic.GetHeadquarters(PlayerID)
+					IsInOutStock = Logic.GetIndexOnOutStockByGoodType(BuildingID, CostsGoodType)
 				else
-					IconWidget = Good2Path .. "/Icon"
-					AmountWidget = Good2Path .. "/Amount"
+					BuildingID = Logic.GetStoreHouse(PlayerID)
+					IsInOutStock = Logic.GetIndexOnOutStockByGoodType(BuildingID, CostsGoodType)
 				end
-            
-				SetIcon(IconWidget, g_TexturePositions.Goods[CostsGoodType], 44)
-            
-				local PlayerID = GUI.GetPlayerID()
-				local PlayersGoodAmount
-				
-				-- Additions for BCS Handling
-				local ID = BCS.GetEntityIDToAddToOutStock(CostsGoodType)
-				
-				if UseBCSCosts == true then
-					PlayersGoodAmount = BCS.GetAmountOfGoodsInSettlement(CostsGoodType, PlayerID, BCS.MarketplaceGoodsCount)
-				elseif _GoodsInSettlementBoolean == true then
-					PlayersGoodAmount = GetPlayerGoodsInSettlement(CostsGoodType, PlayerID, true)
-				else 
-				    local IsInOutStock, BuildingID           
-					if CostsGoodType == Goods.G_Gold then
-						BuildingID = Logic.GetHeadquarters(PlayerID)
-						IsInOutStock = Logic.GetIndexOnOutStockByGoodType(BuildingID, CostsGoodType)
-					else
-						BuildingID = Logic.GetStoreHouse(PlayerID)
-						IsInOutStock = Logic.GetIndexOnOutStockByGoodType(BuildingID, CostsGoodType)
-					end
                 
-					if IsInOutStock ~= -1 then
+				if IsInOutStock ~= -1 then
+					PlayersGoodAmount = Logic.GetAmountOnOutStockByGoodType(BuildingID, CostsGoodType)
+				else
+					BuildingID = GUI.GetSelectedEntity()
+                    
+					if BuildingID ~= nil then
+						if Logic.GetIndexOnOutStockByGoodType(BuildingID, CostsGoodType) == nil then
+							BuildingID = Logic.GetRefillerID(GUI.GetSelectedEntity())
+						end
+                        
 						PlayersGoodAmount = Logic.GetAmountOnOutStockByGoodType(BuildingID, CostsGoodType)
 					else
-						BuildingID = GUI.GetSelectedEntity()
-                    
-						if BuildingID ~= nil then
-							if Logic.GetIndexOnOutStockByGoodType(BuildingID, CostsGoodType) == nil then
-								BuildingID = Logic.GetRefillerID(GUI.GetSelectedEntity())
-							end
-                        
-							PlayersGoodAmount = Logic.GetAmountOnOutStockByGoodType(BuildingID, CostsGoodType)
-						else
-							PlayersGoodAmount = 0
-						end
+						PlayersGoodAmount = 0
 					end
-				end		
-				if PlayersGoodAmount == nil then
-					PlayersGoodAmount = 0
 				end
-				-- Changed
-      
-				local Color = ""           
-				if PlayersGoodAmount < CostsGoodAmount then
-					Color = "{@script:ColorRed}"
-				end
-            
-				if CostsGoodAmount > 0 then
-					XGUIEng.SetText(AmountWidget, "{center}" .. Color .. CostsGoodAmount)
-				else
-					XGUIEng.SetText(AmountWidget, "")
-				end
-				ContainerIndex = ContainerIndex + 1
+			end		
+			if PlayersGoodAmount == nil then
+				PlayersGoodAmount = 0
 			end
+      
+			local Color = ""           
+			if PlayersGoodAmount < CostsGoodAmount then
+				Color = "{@script:ColorRed}"
+			end
+            
+			if CostsGoodAmount > 0 then
+				XGUIEng.SetText(AmountWidget, "{center}" .. Color .. CostsGoodAmount)
+			else
+				XGUIEng.SetText(AmountWidget, "")
+			end
+			ContainerIndex = ContainerIndex + 1
 		end
 	end
 end
@@ -1101,7 +1013,7 @@ BCS.HandlePlacementModeUpdate = function(_currentUpgradeCategory)
 		BCS.StreetMultiplier.Second = CurrentAmountOfSecondGood
 		
 		Available = BCS.AreResourcesAvailable(4, CurrentAmountOfFirstGood, CurrentAmountOfSecondGood)
-				
+
 		if (Available == false) and (BCS.StreetMultiplier.CurrentX ~= 1 and BCS.StreetMultiplier.CurrentY ~= 1) then
 			BCS.ShowOverlayWidget(true)
 		else
@@ -1193,21 +1105,16 @@ BCS.InitializeBuildingCostSystem = function()
 		BCS.GUI_StateChanged = GameCallback_GUI_StateChanged;
 	end	
 	GameCallback_GUI_StateChanged = function(_StateNameID, _Armed)
-		BCS.GUI_StateChanged(_StateNameID, _Armed)
-		
-		-- TODO: What happens when the player switches from e.g. PlaceBuilding into PlaceBuilding? 
-		-- Does this case work too?
-		-- CAN'T HAPPEN because all Building functions call GUI.CancelState() which should set the state to selection?
-		-- I Guess ;)
-		if BCS.IsCurrentStateABuildingState(_StateNameID) == false then
-			BCS.ShowOverlayWidget(false)		
+		if not BCS.IsCurrentStateABuildingState(_StateNameID) then
 			BCS.SetAwaitingVariable(false)
+			BCS.ShowOverlayWidget(false)		
 			BCS.IsInWallOrPalisadeContinueState = false
 			GUI.SendScriptCommand([[BCS.AreBuildingCostsAvailable = nil]])
 			
 			BCS.ResetTrailAndRoadCosts()
 			BCS.ResetWallTurretPositions()
 		end
+		BCS.GUI_StateChanged(_StateNameID, _Armed)
 	end
 
 	if BCS.AreCostsAffordable == nil then
