@@ -42,7 +42,7 @@ BCS.CurrentFestivalCosts = nil
 
 BCS.OverlayWidget = "/EndScreen"
 BCS.OverlayIsCurrentlyShown = false
-BCS.CurrentBCSVersion = "4.2 - 30.03.2023 16:31"
+BCS.CurrentBCSVersion = "4.2 - 30.03.2023 17:49"
 
 ----------------------------------------------------------------------------------------------------------------------
 --These functions are exported to userspace---------------------------------------------------------------------------
@@ -60,6 +60,7 @@ BCS.EditBuildingCosts = function(_upgradeCategory, _originalCostAmount, _newGood
 	end
 	
 	-- Check for invalid GoodAmount
+	assert(_newGood ~= nil and _newGoodAmount > 0)
 	local AmountOfTypes, FirstBuildingType = Logic.GetBuildingTypesInUpgradeCategory(_upgradeCategory)
 	local Costs = {BCS.GetEntityTypeFullCost(FirstBuildingType)}
 	assert(_originalCostAmount >= Costs[2])
@@ -730,7 +731,7 @@ BCS.OverwriteGetCostLogics = function()
 	end	
 	Logic.GetEntityTypeFullCost = function(_buildingType)
 		local OriginalCosts = {BCS.GetEntityTypeFullCost(_buildingType)}
-		local Costs = BCS.GetCostByCostTable(Logic.GetUpgradeCategoryByBuildingType(_buildingType))
+		local Costs = {BCS.GetCostByCostTable(Logic.GetUpgradeCategoryByBuildingType(_buildingType))}
 		if (Costs == nil or Costs == 0) then
 			return OriginalCosts;
 		else
@@ -1114,7 +1115,6 @@ BCS.InitializeBuildingCostSystem = function()
 			BCS.SetAwaitingVariable(false)
 			BCS.ShowOverlayWidget(false)		
 			BCS.IsInWallOrPalisadeContinueState = false
-			GUI.SendScriptCommand([[BCS.AreBuildingCostsAvailable = nil]])
 			
 			BCS.ResetTrailAndRoadCosts()
 			BCS.ResetWallTurretPositions()
