@@ -42,7 +42,7 @@ BCS.CurrentFestivalCosts = nil
 
 BCS.OverlayWidget = "/EndScreen"
 BCS.OverlayIsCurrentlyShown = false
-BCS.CurrentBCSVersion = "4.2 - 30.03.2023 17:49"
+BCS.CurrentBCSVersion = "4.2 - 30.03.2023 23:22"
 
 ----------------------------------------------------------------------------------------------------------------------
 --These functions are exported to userspace---------------------------------------------------------------------------
@@ -731,7 +731,7 @@ BCS.OverwriteGetCostLogics = function()
 	end	
 	Logic.GetEntityTypeFullCost = function(_buildingType)
 		local OriginalCosts = {BCS.GetEntityTypeFullCost(_buildingType)}
-		local Costs = {BCS.GetCostByCostTable(Logic.GetUpgradeCategoryByBuildingType(_buildingType))}
+		local Costs = BCS.GetCostByCostTable(Logic.GetUpgradeCategoryByBuildingType(_buildingType))
 		if (Costs == nil or Costs == 0) then
 			return OriginalCosts;
 		else
