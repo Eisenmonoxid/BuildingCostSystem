@@ -2,47 +2,52 @@
 -----------------------------**BuildingCostSystem (BCS) Created By Eisenmonoxid**-------------------------------------
 -----------------**Find the newest version here: https://github.com/Eisenmonoxid/S6CostSystem**-----------------------
 ----------------------------------------------------------------------------------------------------------------------
-BCS = {}
 
-BCS.BuildingCosts = {} -- Contains all new costs
-BCS.BuildingIDTable = {} -- Contains Building IDs and the corresponding costs
+BCS = {
 
-BCS.RoadMultiplier = {} -- Road
-BCS.RoadMultiplier.First = 1
-BCS.RoadMultiplier.Second = 1
-BCS.RoadMultiplier.CurrentActualCost = 1
+	BuildingCosts = {}, -- Contains all new costs
+	BuildingIDTable = {}, -- Contains Building IDs and the corresponding costs
 
-BCS.StreetMultiplier = {} -- Trail
-BCS.StreetMultiplier.First = 1
-BCS.StreetMultiplier.Second = 1
-BCS.StreetMultiplier.CurrentX = 1
-BCS.StreetMultiplier.CurrentY = 1
+	RoadMultiplier = {
+		First = 1,
+		Second = 1,
+		CurrentActualCost = 1,
+	},
 
-BCS.RoadCosts = nil
-BCS.TrailCosts = nil
-BCS.PalisadeCosts = nil
-BCS.WallCosts = nil
+	StreetMultiplier = {
+		First = 1,
+		Second = 1,
+		CurrentX = 1,
+		CurrentY = 1,
+	},
 
-BCS.IsCurrentBuildingInCostTable = false -- Set at BuildClicked, true in hovering mode, reset at AfterBuildingPlacement
-BCS.CurrentExpectedBuildingType = nil -- Used for KnockDown saving
-BCS.CurrentKnockDownFactor = 0.5 -- Half the new good cost is refunded at knock down
-BCS.CurrentOriginalGoodKnockDownFactor = 0.2
-BCS.IsInWallOrPalisadeContinueState = false
-BCS.MarketplaceGoodsCount = false
-BCS.RefundCityGoods = true
-BCS.CurrentWallTypeForClimate = nil -- Save climate zone wall type here
+	RoadCosts = nil,
+	TrailCosts = nil,
+	PalisadeCosts = nil,
+	WallCosts = nil,
+	CurrentFestivalCosts = nil,
 
-StartTurretX = 1 -- Variables from the Original Lua Game Script
+	IsCurrentBuildingInCostTable = false, -- Set at BuildClicked, true in hovering mode, reset at AfterBuildingPlacement
+	CurrentExpectedBuildingType = nil, -- Used for KnockDown saving
+	CurrentKnockDownFactor = 0.5, -- Half the new good cost is refunded at knock down
+	CurrentOriginalGoodKnockDownFactor = 0.2,
+	IsInWallOrPalisadeContinueState = false,
+	MarketplaceGoodsCount = false,
+	RefundCityGoods = true,
+	CurrentWallTypeForClimate = nil, -- Save climate zone wall type here
+	OverlayWidget = "/EndScreen",
+	OverlayIsCurrentlyShown = false,
+	
+	CurrentBCSVersion = "4.2 - 02.04.2023 19:26",
+	
+};
+
+-- Global variables from the original lua game script --
+StartTurretX = 1 
 StartTurretY = 1
 
 EndTurretX = 1
 EndTurretY = 1
-
-BCS.CurrentFestivalCosts = nil
-
-BCS.OverlayWidget = "/EndScreen"
-BCS.OverlayIsCurrentlyShown = false
-BCS.CurrentBCSVersion = "4.2 - 02.04.2023 18:56"
 
 ----------------------------------------------------------------------------------------------------------------------
 --These functions are exported to userspace---------------------------------------------------------------------------
@@ -730,10 +735,10 @@ BCS.OverwriteGetCostLogics = function()
 		BCS.GetEntityTypeFullCost = Logic.GetEntityTypeFullCost;
 	end	
 	Logic.GetEntityTypeFullCost = function(_buildingType)
-		local OriginalCosts = BCS.GetEntityTypeFullCost(_buildingType)
+		local OriginalCosts = {BCS.GetEntityTypeFullCost(_buildingType)}
 		local Costs = BCS.GetCostByCostTable(Logic.GetUpgradeCategoryByBuildingType(_buildingType))
 		if (Costs == nil or Costs == 0) then
-			return OriginalCosts;
+			return BCS.GetEntityTypeFullCost(_buildingType);
 		else
 			return OriginalCosts[1], Costs[1], Costs[2], Costs[3];
 		end
