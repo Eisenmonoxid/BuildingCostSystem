@@ -38,7 +38,7 @@ BCS = {
 	OverlayWidget = "/EndScreen",
 	OverlayIsCurrentlyShown = false,
 	
-	CurrentBCSVersion = "4.2 - 02.04.2023 19:26",
+	CurrentBCSVersion = "4.2 - 16.04.2023 16:46",
 	
 };
 
@@ -735,11 +735,11 @@ BCS.OverwriteGetCostLogics = function()
 		BCS.GetEntityTypeFullCost = Logic.GetEntityTypeFullCost;
 	end	
 	Logic.GetEntityTypeFullCost = function(_buildingType)
-		local OriginalCosts = {BCS.GetEntityTypeFullCost(_buildingType)}
 		local Costs = BCS.GetCostByCostTable(Logic.GetUpgradeCategoryByBuildingType(_buildingType))
 		if (Costs == nil or Costs == 0) then
 			return BCS.GetEntityTypeFullCost(_buildingType);
 		else
+			local OriginalCosts = {BCS.GetEntityTypeFullCost(_buildingType)}
 			return OriginalCosts[1], Costs[1], Costs[2], Costs[3];
 		end
 	end
