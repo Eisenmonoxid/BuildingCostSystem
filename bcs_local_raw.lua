@@ -615,7 +615,7 @@ BCS.CustomBuildClicked = function(_upgradeCategory, _isWallOrPalisadeGate)
 	PlacementState = 0
     XGUIEng.UnHighLightGroup("/InGame", "Construction")
 
-    if not GUI_Construction.TestSettlerLimit(_upgradeCategory) and _isWallOrPalisadeGate == true then
+    if not GUI_Construction.TestSettlerLimit(_upgradeCategory) and _isWallOrPalisadeGate == false then
         return;
     end
 
@@ -627,6 +627,9 @@ BCS.CustomBuildClicked = function(_upgradeCategory, _isWallOrPalisadeGate)
         Sound.FXPlay2DSound( "ui\\menu_select")
         GUI.CancelState()
 		
+		-- save last placement
+        g_LastPlacedParam = _upgradeCategory
+		
 		if _isWallOrPalisadeGate == false then
 			GUI.ActivatePlaceBuildingState(_upgradeCategory)
 		else
@@ -635,10 +638,6 @@ BCS.CustomBuildClicked = function(_upgradeCategory, _isWallOrPalisadeGate)
 
         XGUIEng.ShowWidget("/Ingame/Root/Normal/PlacementStatus",1)
         GUI_Construction.CloseContextSensitiveMenu()
-
-        -- save last placement
-        g_LastPlacedParam = _upgradeCategory
-        g_LastPlacedFunction = BCS.CustomBuildClicked
     end
 end
 BCS.CustomBuildWallOrStreetClicked = function(_upgradeCategory, _isTrail)
@@ -648,8 +647,11 @@ BCS.CustomBuildWallOrStreetClicked = function(_upgradeCategory, _isTrail)
     GUI.CancelState()
     GUI.ClearSelection()
 	
+	-- save last placement
+    g_LastPlacedParam = _upgradeCategory
+	
 	if _upgradeCategory == nil and _IsTrail ~= nil then
-		_upgradeCategory = _IsTrail
+		g_LastPlacedParam = _IsTrail
 		GUI.ActivatePlaceRoadState(_IsTrail)
 	else
 		GUI.ActivatePlaceWallState(_upgradeCategory)
@@ -657,10 +659,6 @@ BCS.CustomBuildWallOrStreetClicked = function(_upgradeCategory, _isTrail)
 	
     XGUIEng.ShowWidget("/Ingame/Root/Normal/PlacementStatus", 1)
     GUI_Construction.CloseContextSensitiveMenu()
-
-    -- save last placement
-    g_LastPlacedParam = _upgradeCategory
-    g_LastPlacedFunction = BCS.CustomBuildWallOrStreetClicked
 end
 
 BCS.OverwriteBuildClicked = function()
@@ -680,6 +678,7 @@ BCS.OverwriteBuildClicked = function()
 			-- Original Building
 			BCS.BuildClicked(_upgradeCategory)
 		end
+		g_LastPlacedFunction = GUI_Construction.BuildClicked
 	end
 	
 	if BCS.BuildWallClicked == nil then
@@ -703,6 +702,8 @@ BCS.OverwriteBuildClicked = function()
 		else
 			BCS.BuildWallClicked(_upgradeCategory)
 		end
+		
+		g_LastPlacedFunction = GUI_Construction.BuildWallClicked
 	end
 	
 	if BCS.BuildWallGateClicked == nil then
@@ -725,6 +726,8 @@ BCS.OverwriteBuildClicked = function()
 			-- Original WallGate
 			BCS.BuildWallGateClicked(_upgradeCategory)
 		end
+		
+		g_LastPlacedFunction = GUI_Construction.BuildWallGateClicked
 	end
 	
 	if BCS.BuildStreetClicked == nil then
@@ -747,6 +750,8 @@ BCS.OverwriteBuildClicked = function()
 		else
 			BCS.BuildStreetClicked(_IsTrail)
 		end
+		
+		g_LastPlacedFunction = GUI_Construction.BuildStreetClicked
 	end
 	
 	if BCS.ContinueWallClicked == nil then
