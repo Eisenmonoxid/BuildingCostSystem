@@ -27,7 +27,6 @@ BCS = {
 	WallCosts = nil,
 	CurrentFestivalCosts = nil,
 
-	IsCurrentBuildingInCostTable = false, -- Set at BuildClicked, true in hovering mode, reset at AfterBuildingPlacement
 	CurrentExpectedBuildingType = nil, -- Used for KnockDown saving
 	CurrentKnockDownFactor = 0.5, -- Half the new good cost is refunded at knock down
 	CurrentOriginalGoodKnockDownFactor = 0.2,
@@ -37,9 +36,9 @@ BCS = {
 	CurrentWallTypeForClimate = nil, -- Save climate zone wall type here
 	OverlayWidget = "/EndScreen",
 	OverlayIsCurrentlyShown = false,
+	CurrentPlayerID = 1;
 	
 	CurrentBCSVersion = "4.2 - 16.04.2023 16:46",
-	
 };
 
 -- Global variables from the original lua game script --
@@ -65,7 +64,13 @@ BCS.EditBuildingCosts = function(_upgradeCategory, _originalCostAmount, _newGood
 	end
 	
 	-- Check for invalid GoodAmount
-	assert(_newGood ~= nil and _newGoodAmount > 0)
+	-- Support only changing the original value without adding a new good
+	if _newGood ~= nil then
+		assert(_newGoodAmount > 0)
+		-- Check for valid Good (T_Shovel01 == 178, the highest Good)
+		assert(_newGood > 0 and _newGood <= Goods.T_Shovel01)
+	end
+	
 	local AmountOfTypes, FirstBuildingType = Logic.GetBuildingTypesInUpgradeCategory(_upgradeCategory)
 	local Costs = {BCS.GetEntityTypeFullCost(FirstBuildingType)}
 	assert(_originalCostAmount >= Costs[2])
@@ -81,6 +86,9 @@ BCS.EditRoadCosts = function(_originalCostFactor, _newGood, _newGoodFactor)
 		return;
 	end
 	assert(_originalCostFactor >= 3)
+	-- Check for valid Good (T_Shovel01 == 178, the highest Good)
+	assert(_newGood > 0 and _newGood <= Goods.T_Shovel01)
+	
 	BCS.RoadCosts = {Goods.G_Stone, _originalCostFactor, _newGood, _newGoodFactor}
 end
 
@@ -91,6 +99,9 @@ BCS.EditWallCosts = function(_originalCostFactor, _newGood, _newGoodFactor)
 		return;
 	end
 	assert(_originalCostFactor >= 3)
+	-- Check for valid Good (T_Shovel01 == 178, the highest Good)
+	assert(_newGood > 0 and _newGood <= Goods.T_Shovel01)
+	
 	BCS.WallCosts = {Goods.G_Stone, _originalCostFactor, _newGood, _newGoodFactor}
 end
 
@@ -101,6 +112,9 @@ BCS.EditPalisadeCosts = function(_originalCostFactor, _newGood, _newGoodFactor)
 		return;
 	end
 	assert(_originalCostFactor >= 3)
+	-- Check for valid Good (T_Shovel01 == 178, the highest Good)
+	assert(_newGood > 0 and _newGood <= Goods.T_Shovel01)
+	
 	BCS.PalisadeCosts = {Goods.G_Wood, _originalCostFactor, _newGood, _newGoodFactor}
 end
 
@@ -110,6 +124,9 @@ BCS.EditTrailCosts = function(_firstGood, _originalCostFactor, _secondGood, _new
 		BCS.TrailCosts = nil
 		return;
 	end
+	-- Check for valid Good (T_Shovel01 == 178, the highest Good)
+	assert((_firstGood > 0 and _secondGood > 0) and (_firstGood <= Goods.T_Shovel01 and _secondGood <= Goods.T_Shovel01))
+	
 	BCS.TrailCosts = {_firstGood, _originalCostFactor, _secondGood, _newGoodFactor}
 end
 
@@ -129,6 +146,8 @@ BCS.EditFestivalCosts = function(_originalCostFactor, _secondGood, _newGoodFacto
 	end
 	
 	assert(_originalCostFactor >= 1)
+	assert(_secondGood > 0 and _secondGood <= Goods.T_Shovel01)
+	
 	BCS.CurrentFestivalCosts = {Goods.G_Gold, _originalCostFactor, _secondGood, _newGoodFactor}
 end
 
@@ -194,7 +213,6 @@ end
 ----------------------------------------------------------------------------------------------------------------------
 
 BCS.RemoveCostsFromOutStock = function(_upgradeCategory)
-	local PlayerID = GUI.GetPlayerID()
 	local AmountOfTypes, FirstBuildingType = Logic.GetBuildingTypesInUpgradeCategory(_upgradeCategory)
 	local Costs = {Logic.GetEntityTypeFullCost(FirstBuildingType)}
 	local OriginalCosts = {BCS.GetEntityTypeFullCost(FirstBuildingType)}
@@ -203,7 +221,7 @@ BCS.RemoveCostsFromOutStock = function(_upgradeCategory)
 
 	local CurrentID = BCS.GetEntityIDToAddToOutStock(Costs[1])
 	if CurrentID == false then
-		BCS.RemoveCostsFromOutStockCityGoods(Costs[1], FAmountToRemove, PlayerID, BCS.MarketplaceGoodsCount)
+		BCS.RemoveCostsFromOutStockCityGoods(Costs[1], FAmountToRemove, BCS.CurrentPlayerID, BCS.MarketplaceGoodsCount)
 	else
 		local FGoodCurrentAmount = Logic.GetAmountOnOutStockByGoodType(CurrentID, Costs[1])
 		if FGoodCurrentAmount < FAmountToRemove then
@@ -221,7 +239,7 @@ BCS.RemoveCostsFromOutStock = function(_upgradeCategory)
 		
 		CurrentID = BCS.GetEntityIDToAddToOutStock(Costs[3])
 		if CurrentID == false then
-			BCS.RemoveCostsFromOutStockCityGoods(Costs[3], SAmountToRemove, PlayerID, BCS.MarketplaceGoodsCount)
+			BCS.RemoveCostsFromOutStockCityGoods(Costs[3], SAmountToRemove, BCS.CurrentPlayerID, BCS.MarketplaceGoodsCount)
 		else
 			local SGoodCurrentAmount = Logic.GetAmountOnOutStockByGoodType(CurrentID, Costs[3])
 			if SGoodCurrentAmount < SAmountToRemove then
@@ -304,7 +322,6 @@ BCS.RemoveVariableCostsFromOutStock = function(_type)
 	-- 1 = Palisade, 2 = Wall, 3 = Trail, 4 = Road
 	local CostTable, OriginalCosts, CurrentID
 	local Costs = {0,0,0,0} -- Just to be sure
-	local PlayerID = GUI.GetPlayerID()
 	
 	if _type == 1 then -- Palisade
 		CostTable = BCS.PalisadeCosts
@@ -332,7 +349,7 @@ BCS.RemoveVariableCostsFromOutStock = function(_type)
 	
 	CurrentID = BCS.GetEntityIDToAddToOutStock(CostTable[1])
 	if CurrentID == false then
-		BCS.RemoveCostsFromOutStockCityGoods(CostTable[1], Costs[2] - OriginalCosts, PlayerID, BCS.MarketplaceGoodsCount)
+		BCS.RemoveCostsFromOutStockCityGoods(CostTable[1], Costs[2] - OriginalCosts, BCS.CurrentPlayerID, BCS.MarketplaceGoodsCount)
 	else
 		GUI.RemoveGoodFromStock(CurrentID, CostTable[1], Costs[2] - OriginalCosts)
 	end
@@ -340,7 +357,7 @@ BCS.RemoveVariableCostsFromOutStock = function(_type)
 	if CostTable[3] ~= nil and CostTable[3] ~= 0 then
 		CurrentID = BCS.GetEntityIDToAddToOutStock(CostTable[3])
 		if CurrentID == false then
-			BCS.RemoveCostsFromOutStockCityGoods(CostTable[3], Costs[4], PlayerID, BCS.MarketplaceGoodsCount)
+			BCS.RemoveCostsFromOutStockCityGoods(CostTable[3], Costs[4], BCS.CurrentPlayerID, BCS.MarketplaceGoodsCount)
 		else
 			GUI.RemoveGoodFromStock(CurrentID, CostTable[3], Costs[4])
 		end
@@ -348,7 +365,6 @@ BCS.RemoveVariableCostsFromOutStock = function(_type)
 end
 
 BCS.AreResourcesAvailable = function(_upgradeCategory, _FGoodAmount, _SGoodAmount)
-	local PlayerID = GUI.GetPlayerID()
 	local AmountOfTypes, FirstBuildingType, Costs
 	
 	if _FGoodAmount ~= nil and _SGoodAmount ~= nil then
@@ -368,9 +384,15 @@ BCS.AreResourcesAvailable = function(_upgradeCategory, _FGoodAmount, _SGoodAmoun
 		_SGoodAmount = Costs[4]
 	end
 	
-	local AmountOfFirstGood, AmountOfSecondGood
-	AmountOfFirstGood = BCS.GetAmountOfGoodsInSettlement(Costs[1], PlayerID, BCS.MarketplaceGoodsCount)
-	AmountOfSecondGood = BCS.GetAmountOfGoodsInSettlement(Costs[3], PlayerID, BCS.MarketplaceGoodsCount)
+	local AmountOfFirstGood = 0
+	local AmountOfSecondGood = 0
+	
+	AmountOfFirstGood = BCS.GetAmountOfGoodsInSettlement(Costs[1], BCS.CurrentPlayerID, BCS.MarketplaceGoodsCount)
+	if Costs[3] ~= nil and Costs[3] ~= 0 then
+		AmountOfSecondGood = BCS.GetAmountOfGoodsInSettlement(Costs[3], BCS.CurrentPlayerID, BCS.MarketplaceGoodsCount)
+	else
+		_SGoodAmount = 0
+	end
 	
 	if (AmountOfFirstGood < _FGoodAmount or AmountOfSecondGood < _SGoodAmount) then
 		return false
@@ -382,7 +404,6 @@ end
 BCS.RefundKnockDown = function(_entityID)
 	-- WARNING: _entityID is not valid here anymore! DO NOT USE ON GAME FUNCTIONS!
 	-- -> Just used to get the corresponding table index
-	local PlayerID = GUI.GetPlayerID()
 	local CostTable, Type = BCS.GetCostByBuildingIDTable(_entityID)
 
 	if CostTable == nil then -- Building has no costs
@@ -401,14 +422,16 @@ BCS.RefundKnockDown = function(_entityID)
 			Logic.AddGoodToStock(]]..IDFirstGood..[[, ]]..CostTable[2]..[[, ]]..(math.ceil(CostTable[3] * BCS.CurrentOriginalGoodKnockDownFactor))..[[)	
 		]])
 	end
-	if IDSecondGood == false then -- CityGood
-		if BCS.RefundCityGoods == true then
-			BCS.RefundKnockDownForCityGoods(CostTable[4], (math.ceil(CostTable[5] * BCS.CurrentKnockDownFactor)))
+	if IDSecondGood ~= nil then
+		if IDSecondGood == false then -- CityGood
+			if BCS.RefundCityGoods == true then
+				BCS.RefundKnockDownForCityGoods(CostTable[4], (math.ceil(CostTable[5] * BCS.CurrentKnockDownFactor)))
+			end
+		else
+			GUI.SendScriptCommand([[
+				Logic.AddGoodToStock(]]..IDSecondGood..[[, ]]..CostTable[4]..[[, ]]..(math.ceil(CostTable[5] * BCS.CurrentKnockDownFactor))..[[)	
+			]])
 		end
-	else
-		GUI.SendScriptCommand([[
-			Logic.AddGoodToStock(]]..IDSecondGood..[[, ]]..CostTable[4]..[[, ]]..(math.ceil(CostTable[5] * BCS.CurrentKnockDownFactor))..[[)	
-		]])
 	end
 	
 	BCS.BuildingIDTable[Type] = nil -- Delete the Entity ID from the table
@@ -417,12 +440,11 @@ BCS.RefundKnockDown = function(_entityID)
 end
 
 BCS.RefundKnockDownForCityGoods = function(_goodType, _goodAmount)
-	local PlayerID = GUI.GetPlayerID()
 	local AmountToRemove = _goodAmount
 	local BuildingTypes, Buildings
 	
 	BuildingTypes = {Logic.GetBuildingTypesProducingGood(_goodType)}
-	Buildings = GetPlayerEntities(PlayerID, BuildingTypes[1])
+	Buildings = GetPlayerEntities(BCS.CurrentPlayerID, BuildingTypes[1])
 
 	local CurrentOutStock, CurrentMaxOutStock = 0, 0
     for i = 1, #Buildings, 1 do
@@ -450,14 +472,16 @@ BCS.RefundKnockDownForCityGoods = function(_goodType, _goodAmount)
 end
 
 BCS.GetEntityIDToAddToOutStock = function(_goodType)
-	local PlayerID = GUI.GetPlayerID()
-	
-	if _goodType == Goods.G_Gold then 
-		return Logic.GetHeadquarters(PlayerID) 
+	if _goodType == nil then 
+		return nil 
 	end
 	
-	if Logic.GetIndexOnOutStockByGoodType(Logic.GetStoreHouse(PlayerID), _goodType) ~= -1 then
-		return Logic.GetStoreHouse(PlayerID)
+	if _goodType == Goods.G_Gold then 
+		return Logic.GetHeadquarters(BCS.CurrentPlayerID) 
+	end
+	
+	if Logic.GetIndexOnOutStockByGoodType(Logic.GetStoreHouse(BCS.CurrentPlayerID), _goodType) ~= -1 then
+		return Logic.GetStoreHouse(BCS.CurrentPlayerID)
 	end
 	
 	--Check here for Buildings, when player uses production goods as building material
@@ -508,35 +532,19 @@ end
 --Hacking the game functions here-------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------
 
-BCS.HasCurrentBuildingOwnBuildingCosts = function(_upgradeCategory)
-	local CostTable = BCS.GetCostByCostTable(_upgradeCategory)
-	if (CostTable == nil or CostTable == 0) then
-		BCS.SetAwaitingVariable(false)
-		Framework.WriteToLog("BCS: Building NOT Custom with Category: "..tostring(_upgradeCategory))
-	else
-		BCS.SetAwaitingVariable(true)
-		Framework.WriteToLog("BCS: Building Custom with Category: "..tostring(_upgradeCategory))
-	end
-end
-BCS.SetAwaitingVariable = function(_isAwaiting)
-	BCS.IsCurrentBuildingInCostTable = _isAwaiting
-end
-BCS.GetAwaitingVariable = function()
-	return BCS.IsCurrentBuildingInCostTable
-end
-
 BCS.OverwriteAfterPlacement = function()
 	if BCS.GameCallback_GUI_AfterBuildingPlacement == nil then
 		BCS.GameCallback_GUI_AfterBuildingPlacement = GameCallback_GUI_AfterBuildingPlacement;
 	end
     GameCallback_GUI_AfterBuildingPlacement = function()
-		if (BCS.GetAwaitingVariable() == true) then
+	
+		local CostTable = BCS.GetCostByCostTable(g_LastPlacedParam)
+		if (CostTable ~= nil and CostTable ~= 0) then
 			local AmountOfTypes, FirstBuildingType = Logic.GetBuildingTypesInUpgradeCategory(g_LastPlacedParam)
 			BCS.CurrentExpectedBuildingType = FirstBuildingType
-			
 			BCS.RemoveCostsFromOutStock(g_LastPlacedParam)
-			BCS.SetAwaitingVariable(false)
 		end
+		
         BCS.GameCallback_GUI_AfterBuildingPlacement();
     end
 	
@@ -544,13 +552,14 @@ BCS.OverwriteAfterPlacement = function()
 		BCS.GameCallback_GUI_AfterWallGatePlacement = GameCallback_GUI_AfterWallGatePlacement;
 	end
     GameCallback_GUI_AfterWallGatePlacement = function()
-		if (BCS.GetAwaitingVariable() == true) then
+	
+		local CostTable = BCS.GetCostByCostTable(g_LastPlacedParam)
+		if (CostTable ~= nil and CostTable ~= 0) then
 			local AmountOfTypes, FirstBuildingType = Logic.GetBuildingTypesInUpgradeCategory(g_LastPlacedParam)
 			BCS.CurrentExpectedBuildingType = FirstBuildingType
-			
-			BCS.RemoveCostsFromOutStock(g_LastPlacedParam);
-			BCS.SetAwaitingVariable(false)
+			BCS.RemoveCostsFromOutStock(g_LastPlacedParam)
 		end
+		
         BCS.GameCallback_GUI_AfterWallGatePlacement();
     end
 	
@@ -597,56 +606,125 @@ BCS.OverwriteAfterPlacement = function()
 		
 		BCS.IsInWallOrPalisadeContinueState = false
 		BCS.ResetWallTurretPositions()
+		
         BCS.GameCallback_GUI_AfterWallPlacement();
     end
+end
+
+BCS.CustomBuildClicked = function(_upgradeCategory, _isWallOrPalisadeGate)
+	PlacementState = 0
+    XGUIEng.UnHighLightGroup("/InGame", "Construction")
+
+    if not GUI_Construction.TestSettlerLimit(_upgradeCategory) and _isWallOrPalisadeGate == true then
+        return;
+    end
+
+    local CanPlace = BCS.AreResourcesAvailable(_upgradeCategory)
+	
+    if CanPlace == false then
+        Message(XGUIEng.GetStringTableText("Feedback_TextLines/TextLine_NotEnough_Resources"))
+    else
+        Sound.FXPlay2DSound( "ui\\menu_select")
+        GUI.CancelState()
+		
+		if _isWallOrPalisadeGate == false then
+			GUI.ActivatePlaceBuildingState(_upgradeCategory)
+		else
+			GUI.ActivatePlaceWallGateState(_upgradeCategory)
+		end
+
+        XGUIEng.ShowWidget("/Ingame/Root/Normal/PlacementStatus",1)
+        GUI_Construction.CloseContextSensitiveMenu()
+
+        -- save last placement
+        g_LastPlacedParam = _upgradeCategory
+        g_LastPlacedFunction = BCS.CustomBuildClicked
+    end
+end
+BCS.CustomBuildWallOrStreetClicked = function(_upgradeCategory, _isTrail)
+    Sound.FXPlay2DSound( "ui\\menu_select")
+    PlacementState = 0
+
+    GUI.CancelState()
+    GUI.ClearSelection()
+	
+	if _upgradeCategory == nil and _IsTrail ~= nil then
+		_upgradeCategory = _IsTrail
+		GUI.ActivatePlaceRoadState(_IsTrail)
+	else
+		GUI.ActivatePlaceWallState(_upgradeCategory)
+	end
+	
+    XGUIEng.ShowWidget("/Ingame/Root/Normal/PlacementStatus", 1)
+    GUI_Construction.CloseContextSensitiveMenu()
+
+    -- save last placement
+    g_LastPlacedParam = _upgradeCategory
+    g_LastPlacedFunction = BCS.CustomBuildWallOrStreetClicked
 end
 
 BCS.OverwriteBuildClicked = function()
 	if BCS.BuildClicked == nil then
 		BCS.BuildClicked = GUI_Construction.BuildClicked;
 	end	
-	GUI_Construction.BuildClicked = function(_BuildingType)
+	GUI_Construction.BuildClicked = function(_upgradeCategory)
 		if BCS.IsCurrentStateABuildingState(GUI.GetCurrentStateID()) == true then
 			GUI.CancelState()
 		end
-		BCS.HasCurrentBuildingOwnBuildingCosts(_BuildingType)
-		g_LastPlacedParam = _BuildingType
-		BCS.IsInWallOrPalisadeContinueState = false
-		BCS.BuildClicked(_BuildingType)
+		
+		local CostTable = BCS.GetCostByCostTable(_upgradeCategory)
+		if (CostTable ~= nil and CostTable ~= 0) then
+			-- Custom Building
+			BCS.CustomBuildClicked(_upgradeCategory)
+		else
+			-- Original Building
+			BCS.BuildClicked(_upgradeCategory)
+		end
 	end
 	
 	if BCS.BuildWallClicked == nil then
 		BCS.BuildWallClicked = GUI_Construction.BuildWallClicked;
 	end	
-	GUI_Construction.BuildWallClicked = function(_BuildingType)
+	GUI_Construction.BuildWallClicked = function(_upgradeCategory)
 		if BCS.IsCurrentStateABuildingState(GUI.GetCurrentStateID()) == true then
 			GUI.CancelState()
 		end
-	    if _BuildingType == nil then
-			_BuildingType = GetUpgradeCategoryForClimatezone("WallSegment")
-			BCS.CurrentWallTypeForClimate = _BuildingType
-		end
 		BCS.ResetWallTurretPositions()
-		BCS.SetAwaitingVariable(false)
-		g_LastPlacedParam = _BuildingType
-		BCS.IsInWallOrPalisadeContinueState = false
-		BCS.BuildWallClicked(_BuildingType)
+		
+		if _upgradeCategory == nil then
+			_upgradeCategory = GetUpgradeCategoryForClimatezone("WallSegment")
+			BCS.CurrentWallTypeForClimate = _upgradeCategory
+		end
+		
+		if _upgradeCategory == UpgradeCategories.PalisadeSegment and BCS.PalisadeCosts ~= nil then
+			BCS.CustomBuildWallOrStreetClicked(_upgradeCategory, nil)
+		elseif BCS.WallCosts ~= nil then
+			BCS.CustomBuildWallOrStreetClicked(_upgradeCategory, nil)
+		else
+			BCS.BuildWallClicked(_upgradeCategory)
+		end
 	end
 	
 	if BCS.BuildWallGateClicked == nil then
 		BCS.BuildWallGateClicked = GUI_Construction.BuildWallGateClicked;
 	end	
-	GUI_Construction.BuildWallGateClicked = function(_BuildingType)
+	GUI_Construction.BuildWallGateClicked = function(_upgradeCategory)
 		if BCS.IsCurrentStateABuildingState(GUI.GetCurrentStateID()) == true then
 			GUI.CancelState()
 		end
-	    if _BuildingType == nil then
-			_BuildingType = GetUpgradeCategoryForClimatezone("WallGate")
+		
+	    if _upgradeCategory == nil then
+			_upgradeCategory = GetUpgradeCategoryForClimatezone("WallGate")
 		end
-		BCS.HasCurrentBuildingOwnBuildingCosts(_BuildingType)
-		g_LastPlacedParam = _BuildingType
-		BCS.IsInWallOrPalisadeContinueState = false
-		BCS.BuildWallGateClicked(_BuildingType)
+		
+		local CostTable = BCS.GetCostByCostTable(_upgradeCategory)
+		if (CostTable ~= nil and CostTable ~= 0) then
+			-- Custom WallGate
+			BCS.CustomBuildClicked(_upgradeCategory)
+		else
+			-- Original WallGate
+			BCS.BuildWallGateClicked(_upgradeCategory)
+		end
 	end
 	
 	if BCS.BuildStreetClicked == nil then
@@ -657,13 +735,18 @@ BCS.OverwriteBuildClicked = function()
 			GUI.CancelState()
 		end
 		BCS.ResetTrailAndRoadCosts()
+		
 	    if _IsTrail == nil then
 			_IsTrail = false
 		end
-		BCS.SetAwaitingVariable(false)
-		g_LastPlacedParam = _IsTrail
-		BCS.IsInWallOrPalisadeContinueState = false
-		BCS.BuildStreetClicked(_IsTrail)
+		
+		if _IsTrail == false and BCS.RoadCosts ~= nil then
+			BCS.CustomBuildWallOrStreetClicked(nil, _IsTrail)
+		elseif BCS.TrailCosts ~= nil then
+			BCS.CustomBuildWallOrStreetClicked(nil, _IsTrail)
+		else
+			BCS.BuildStreetClicked(_IsTrail)
+		end
 	end
 	
 	if BCS.ContinueWallClicked == nil then
@@ -950,21 +1033,20 @@ BCS.SetCustomToolTipCosts = function(_TooltipCostsContainer, _Costs, _GoodsInSet
             
 			SetIcon(IconWidget, g_TexturePositions.Goods[CostsGoodType], 44)
             
-			local PlayerID = GUI.GetPlayerID()
 			local PlayersGoodAmount
 			local ID = BCS.GetEntityIDToAddToOutStock(CostsGoodType)
 				
 			if _UseBCSCosts == true then
-				PlayersGoodAmount = BCS.GetAmountOfGoodsInSettlement(CostsGoodType, PlayerID, BCS.MarketplaceGoodsCount)
+				PlayersGoodAmount = BCS.GetAmountOfGoodsInSettlement(CostsGoodType, BCS.CurrentPlayerID, BCS.MarketplaceGoodsCount)
 			elseif _GoodsInSettlementBoolean == true then
-				PlayersGoodAmount = GetPlayerGoodsInSettlement(CostsGoodType, PlayerID, true)
+				PlayersGoodAmount = GetPlayerGoodsInSettlement(CostsGoodType, BCS.CurrentPlayerID, true)
 			else 
 				local IsInOutStock, BuildingID           
 				if CostsGoodType == Goods.G_Gold then
-					BuildingID = Logic.GetHeadquarters(PlayerID)
+					BuildingID = Logic.GetHeadquarters(BCS.CurrentPlayerID)
 					IsInOutStock = Logic.GetIndexOnOutStockByGoodType(BuildingID, CostsGoodType)
 				else
-					BuildingID = Logic.GetStoreHouse(PlayerID)
+					BuildingID = Logic.GetStoreHouse(BCS.CurrentPlayerID)
 					IsInOutStock = Logic.GetIndexOnOutStockByGoodType(BuildingID, CostsGoodType)
 				end
                 
@@ -1048,8 +1130,9 @@ BCS.HandlePlacementModeUpdate = function(_currentUpgradeCategory)
 		else
 			BCS.ShowOverlayWidget(false)
 		end	
-	else
-		if (BCS.GetAwaitingVariable() == true) then
+	else	
+		local CostTable = BCS.GetCostByCostTable(LastPlaced)
+		if (CostTable ~= nil and CostTable ~= 0) then
 			if not (BCS.AreResourcesAvailable(LastPlaced)) then
 				BCS.ShowOverlayWidget(true)
 			else
@@ -1078,6 +1161,8 @@ end
 -- ]]
 
 BCS.InitializeBuildingCostSystem = function()
+
+	BCS.CurrentPlayerID = GUI.GetPlayerID();
 
 	BCS.OverwriteAfterPlacement()
 	BCS.OverwriteBuildClicked()
@@ -1117,7 +1202,6 @@ BCS.InitializeBuildingCostSystem = function()
 	end	
 	GameCallback_GUI_StateChanged = function(_StateNameID, _Armed)
 		if not BCS.IsCurrentStateABuildingState(_StateNameID) then
-			BCS.SetAwaitingVariable(false)
 			BCS.ShowOverlayWidget(false)		
 			BCS.IsInWallOrPalisadeContinueState = false
 			
@@ -1125,24 +1209,6 @@ BCS.InitializeBuildingCostSystem = function()
 			BCS.ResetWallTurretPositions()
 		end
 		BCS.GUI_StateChanged(_StateNameID, _Armed)
-	end
-
-	if BCS.AreCostsAffordable == nil then
-		BCS.AreCostsAffordable = AreCostsAffordable;
-	end	
-	AreCostsAffordable = function(_Costs, _GoodsInSettlementBoolean)
-		if (BCS.GetAwaitingVariable() == true) then
-			if (BCS.AreResourcesAvailable(g_LastPlacedParam) == false) then
-				BCS.SetAwaitingVariable(false)
-				if BCS.IsCurrentStateABuildingState(GUI.GetCurrentStateID()) == true then
-					GUI.CancelState()
-				end
-				return false, XGUIEng.GetStringTableText("Feedback_TextLines/TextLine_NotEnough_Resources")
-			else
-				return true
-			end
-		end
-		return BCS.AreCostsAffordable(_Costs, _GoodsInSettlementBoolean)
 	end
 		
 	-- Trails don't work when called directly 
@@ -1161,18 +1227,21 @@ BCS.InitializeBuildingCostSystem = function()
 			BCS = {}
 			BCS.AreBuildingCostsAvailable = nil
 		end
+		
 		if BCS.GameCallback_SettlerSpawned == nil then
 			BCS.GameCallback_SettlerSpawned = GameCallback_SettlerSpawned;
 		end
 		GameCallback_SettlerSpawned = function(_PlayerID, _EntityID)
 			BCS.GameCallback_SettlerSpawned(_PlayerID, _EntityID)	
-			if (_PlayerID == 1) then
+			
+			if (_PlayerID == ]]..BCS.CurrentPlayerID..[[) then
 				if (Logic.IsEntityInCategory(_EntityID, EntityCategories.Worker) == 1) 
 				or (Logic.GetEntityType(_EntityID) == Entities.U_OutpostConstructionWorker) 
 				or (Logic.GetEntityType(_EntityID) == Entities.U_WallConstructionWorker) then
-					Logic.ExecuteInLuaLocalState("StartSimpleHiResJobEx(BCS.GetLastPlacedBuildingIDForKnockDown, ".._EntityID..")")
+					Logic.ExecuteInLuaLocalState("BCS.GetLastPlacedBuildingIDForKnockDown(".._EntityID..")")
 				end
 			end
+			
 		end	
 	
 		if BCS.GameCallback_BuildingDestroyed == nil then
@@ -1180,7 +1249,7 @@ BCS.InitializeBuildingCostSystem = function()
 		end
 		GameCallback_BuildingDestroyed = function(_EntityID, _PlayerID, _KnockedDown)
 			BCS.GameCallback_BuildingDestroyed(_EntityID, _PlayerID, _KnockedDown)
-			if (_KnockedDown == 1) and (_PlayerID == 1) then
+			if (_KnockedDown == 1) and (_PlayerID == ]]..BCS.CurrentPlayerID..[[) then
 
 				local IsReachable = CanEntityReachTarget(_PlayerID, Logic.GetStoreHouse(_PlayerID), _EntityID, nil, PlayerSectorTypes.Civil)
 				-- Return nothing in case the building is not reachable
@@ -1196,8 +1265,12 @@ BCS.InitializeBuildingCostSystem = function()
 			BCS.GameCallback_CanPlayerPlaceBuilding = GameCallback_CanPlayerPlaceBuilding;
 		end
 		GameCallback_CanPlayerPlaceBuilding = function(_PlayerID, _Type, _X, _Y)
-			if BCS.AreBuildingCostsAvailable ~= nil then
-				return BCS.AreBuildingCostsAvailable
+			if (_PlayerID == ]]..BCS.CurrentPlayerID..[[) then
+				if BCS.AreBuildingCostsAvailable ~= nil then
+					return BCS.AreBuildingCostsAvailable
+				else
+					return BCS.GameCallback_CanPlayerPlaceBuilding(_PlayerID, _Type, _X, _Y)
+				end
 			else
 				return BCS.GameCallback_CanPlayerPlaceBuilding(_PlayerID, _Type, _X, _Y)
 			end
@@ -1329,7 +1402,7 @@ BCS.FestivalCostsHandler = function()
 		if BCS.CurrentFestivalCosts == nil then
 			BCS.StartFestivalClicked(_FestivalIndex)
 		else
-			local PlayerID = GUI.GetPlayerID()
+			local PlayerID = BCS.CurrentPlayerID;
 			local MarketID = GUI.GetSelectedEntity()
 	
 			if MarketID ~= Logic.GetMarketplace(PlayerID) then
@@ -1369,6 +1442,7 @@ BCS.FestivalCostsHandler = function()
 		end
 	end
 end
+
 BCS.AreFestivalResourcesAvailable = function(_PlayerID, _FestivalIndex)
 	local AmountOfFirstGood, AmountOfSecondGood;
 	local Costs = {BCS.GetFestivalCost(_PlayerID, _FestivalIndex)}
@@ -1387,33 +1461,6 @@ BCS.AreFestivalResourcesAvailable = function(_PlayerID, _FestivalIndex)
 		return false
 	else
 		return true
-	end
-end
-
--- Simplify HiRes Usage --
--- In Case no QSB-S is present --
-if StartSimpleHiResJobEx == nil then
-	function StartSimpleHiResJobEx(_Func, ...)
-		assert(type(_Func) == "function")
-
-		g_SimpleHiResJobExJobs = g_SimpleHiResJobExJobs or {}
-		g_StartSimpleHiResJobExJob = g_StartSimpleHiResJobExJob or StartSimpleHiResJob("StartSimpleHiResJobExHandler")
-		table.insert(g_SimpleHiResJobExJobs, {_Func, {...}})
-		return #g_SimpleHiResJobExJobs
-	end
-
-	function StartSimpleHiResJobExHandler()
-		for i = #g_SimpleHiResJobExJobs, 1, -1 do
-			local Entry = g_SimpleHiResJobExJobs[i]
-			if Entry[1](unpack(Entry[2])) then
-				table.remove(g_SimpleHiResJobExJobs, i)
-			end
-		end
-    
-		if #g_SimpleHiResJobExJobs == 0 then
-			g_StartSimpleHiResJobExJob = nil
-			return true
-		end
 	end
 end
 --#EOF--
