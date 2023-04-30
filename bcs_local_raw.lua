@@ -38,7 +38,7 @@ BCS = {
 	OverlayIsCurrentlyShown = false,
 	CurrentPlayerID = 1;
 	
-	CurrentBCSVersion = "4.3 - 01.05.2023 00:05",
+	CurrentBCSVersion = "4.3 - 01.05.2023 01:09",
 };
 
 -- Global variables from the original lua game script --
@@ -625,15 +625,15 @@ BCS.CustomBuildClicked = function(_upgradeCategory, _isWallOrPalisadeGate)
         Message(XGUIEng.GetStringTableText("Feedback_TextLines/TextLine_NotEnough_Resources"))
     else
         Sound.FXPlay2DSound( "ui\\menu_select")
-        GUI.CancelState()
 		
 		-- save last placement
+		BCS.IsInWallOrPalisadeContinueState = false
         g_LastPlacedParam = _upgradeCategory
 		
-		if _isWallOrPalisadeGate == false then
-			GUI.ActivatePlaceBuildingState(_upgradeCategory)
-		else
+		if _isWallOrPalisadeGate == true then
 			GUI.ActivatePlaceWallGateState(_upgradeCategory)
+		else
+			GUI.ActivatePlaceBuildingState(_upgradeCategory)			
 		end
 
         XGUIEng.ShowWidget("/Ingame/Root/Normal/PlacementStatus",1)
@@ -644,10 +644,10 @@ BCS.CustomBuildWallOrStreetClicked = function(_upgradeCategory, _isTrail)
     Sound.FXPlay2DSound( "ui\\menu_select")
     PlacementState = 0
 
-    GUI.CancelState()
     GUI.ClearSelection()
 	
 	-- save last placement
+	BCS.IsInWallOrPalisadeContinueState = false
     g_LastPlacedParam = _upgradeCategory
 	
 	if _upgradeCategory == nil and _IsTrail ~= nil then
@@ -666,18 +666,16 @@ BCS.OverwriteBuildClicked = function()
 		BCS.BuildClicked = GUI_Construction.BuildClicked;
 	end	
 	GUI_Construction.BuildClicked = function(_upgradeCategory)
-		if BCS.IsCurrentStateABuildingState(GUI.GetCurrentStateID()) == true then
-			GUI.CancelState()
-		end
-		
 		local CostTable = BCS.GetCostByCostTable(_upgradeCategory)
 		if (CostTable ~= nil and CostTable ~= 0) then
 			-- Custom Building
+			GUI.CancelState()
 			BCS.CustomBuildClicked(_upgradeCategory)
 		else
 			-- Original Building
 			BCS.BuildClicked(_upgradeCategory)
 		end
+		
 		g_LastPlacedFunction = GUI_Construction.BuildClicked
 	end
 	
@@ -685,9 +683,6 @@ BCS.OverwriteBuildClicked = function()
 		BCS.BuildWallClicked = GUI_Construction.BuildWallClicked;
 	end	
 	GUI_Construction.BuildWallClicked = function(_upgradeCategory)
-		if BCS.IsCurrentStateABuildingState(GUI.GetCurrentStateID()) == true then
-			GUI.CancelState()
-		end
 		BCS.ResetWallTurretPositions()
 		
 		if _upgradeCategory == nil then
@@ -696,8 +691,10 @@ BCS.OverwriteBuildClicked = function()
 		end
 		
 		if _upgradeCategory == UpgradeCategories.PalisadeSegment and BCS.PalisadeCosts ~= nil then
+			GUI.CancelState()
 			BCS.CustomBuildWallOrStreetClicked(_upgradeCategory, nil)
 		elseif BCS.WallCosts ~= nil then
+			GUI.CancelState()
 			BCS.CustomBuildWallOrStreetClicked(_upgradeCategory, nil)
 		else
 			BCS.BuildWallClicked(_upgradeCategory)
@@ -709,11 +706,7 @@ BCS.OverwriteBuildClicked = function()
 	if BCS.BuildWallGateClicked == nil then
 		BCS.BuildWallGateClicked = GUI_Construction.BuildWallGateClicked;
 	end	
-	GUI_Construction.BuildWallGateClicked = function(_upgradeCategory)
-		if BCS.IsCurrentStateABuildingState(GUI.GetCurrentStateID()) == true then
-			GUI.CancelState()
-		end
-		
+	GUI_Construction.BuildWallGateClicked = function(_upgradeCategory)		
 	    if _upgradeCategory == nil then
 			_upgradeCategory = GetUpgradeCategoryForClimatezone("WallGate")
 		end
@@ -721,6 +714,7 @@ BCS.OverwriteBuildClicked = function()
 		local CostTable = BCS.GetCostByCostTable(_upgradeCategory)
 		if (CostTable ~= nil and CostTable ~= 0) then
 			-- Custom WallGate
+			GUI.CancelState()
 			BCS.CustomBuildClicked(_upgradeCategory)
 		else
 			-- Original WallGate
@@ -734,9 +728,6 @@ BCS.OverwriteBuildClicked = function()
 		BCS.BuildStreetClicked = GUI_Construction.BuildStreetClicked;
 	end	
 	GUI_Construction.BuildStreetClicked = function(_IsTrail)
-		if BCS.IsCurrentStateABuildingState(GUI.GetCurrentStateID()) == true then
-			GUI.CancelState()
-		end
 		BCS.ResetTrailAndRoadCosts()
 		
 	    if _IsTrail == nil then
@@ -744,8 +735,10 @@ BCS.OverwriteBuildClicked = function()
 		end
 		
 		if _IsTrail == false and BCS.RoadCosts ~= nil then
+			GUI.CancelState()
 			BCS.CustomBuildWallOrStreetClicked(nil, _IsTrail)
 		elseif BCS.TrailCosts ~= nil then
+			GUI.CancelState()
 			BCS.CustomBuildWallOrStreetClicked(nil, _IsTrail)
 		else
 			BCS.BuildStreetClicked(_IsTrail)
