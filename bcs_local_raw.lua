@@ -38,7 +38,7 @@ BCS = {
 	OverlayIsCurrentlyShown = false,
 	CurrentPlayerID = 1;
 	
-	CurrentBCSVersion = "4.2 - 16.04.2023 16:46",
+	CurrentBCSVersion = "4.3 - 01.05.2023 00:05",
 };
 
 -- Global variables from the original lua game script --
