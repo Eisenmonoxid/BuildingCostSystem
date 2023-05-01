@@ -38,7 +38,7 @@ BCS = {
 	OverlayIsCurrentlyShown = false,
 	CurrentPlayerID = 1;
 	
-	CurrentBCSVersion = "4.3 - 01.05.2023 01:09",
+	CurrentBCSVersion = "4.3 - 02.05.2023 00:07",
 };
 
 -- Global variables from the original lua game script --
@@ -65,7 +65,7 @@ BCS.EditBuildingCosts = function(_upgradeCategory, _originalCostAmount, _newGood
 	
 	-- Check for invalid GoodAmount
 	-- Support only changing the original value without adding a new good
-	if _newGood ~= nil then
+	if _newGood ~= nil and _newGood ~= 0 then
 		assert(_newGoodAmount > 0)
 		-- Check for valid Good (T_Shovel01 == 178, the highest Good)
 		assert(_newGood > 0 and _newGood <= Goods.T_Shovel01)
@@ -87,7 +87,9 @@ BCS.EditRoadCosts = function(_originalCostFactor, _newGood, _newGoodFactor)
 	end
 	assert(_originalCostFactor >= 3)
 	-- Check for valid Good (T_Shovel01 == 178, the highest Good)
-	assert(_newGood > 0 and _newGood <= Goods.T_Shovel01)
+	if _newGood ~= nil and _newGood ~= 0 then
+		assert(_newGood > 0 and _newGood <= Goods.T_Shovel01)
+	end
 	
 	BCS.RoadCosts = {Goods.G_Stone, _originalCostFactor, _newGood, _newGoodFactor}
 end
@@ -100,7 +102,9 @@ BCS.EditWallCosts = function(_originalCostFactor, _newGood, _newGoodFactor)
 	end
 	assert(_originalCostFactor >= 3)
 	-- Check for valid Good (T_Shovel01 == 178, the highest Good)
-	assert(_newGood > 0 and _newGood <= Goods.T_Shovel01)
+	if _newGood ~= nil and _newGood ~= 0 then
+		assert(_newGood > 0 and _newGood <= Goods.T_Shovel01)
+	end
 	
 	BCS.WallCosts = {Goods.G_Stone, _originalCostFactor, _newGood, _newGoodFactor}
 end
@@ -113,7 +117,9 @@ BCS.EditPalisadeCosts = function(_originalCostFactor, _newGood, _newGoodFactor)
 	end
 	assert(_originalCostFactor >= 3)
 	-- Check for valid Good (T_Shovel01 == 178, the highest Good)
-	assert(_newGood > 0 and _newGood <= Goods.T_Shovel01)
+	if _newGood ~= nil and _newGood ~= 0 then
+		assert(_newGood > 0 and _newGood <= Goods.T_Shovel01)
+	end
 	
 	BCS.PalisadeCosts = {Goods.G_Wood, _originalCostFactor, _newGood, _newGoodFactor}
 end
@@ -125,7 +131,10 @@ BCS.EditTrailCosts = function(_firstGood, _originalCostFactor, _secondGood, _new
 		return;
 	end
 	-- Check for valid Good (T_Shovel01 == 178, the highest Good)
-	assert((_firstGood > 0 and _secondGood > 0) and (_firstGood <= Goods.T_Shovel01 and _secondGood <= Goods.T_Shovel01))
+	if _secondGood ~= nil and _secondGood ~= 0 then
+		assert(_secondGood > 0 and _secondGood <= Goods.T_Shovel01)
+	end
+	assert(_firstGood > 0 and _firstGood <= Goods.T_Shovel01)
 	
 	BCS.TrailCosts = {_firstGood, _originalCostFactor, _secondGood, _newGoodFactor}
 end
@@ -146,7 +155,9 @@ BCS.EditFestivalCosts = function(_originalCostFactor, _secondGood, _newGoodFacto
 	end
 	
 	assert(_originalCostFactor >= 1)
-	assert(_secondGood > 0 and _secondGood <= Goods.T_Shovel01)
+	if _secondGood ~= nil and _secondGood ~= 0 then
+		assert(_secondGood > 0 and _secondGood <= Goods.T_Shovel01)
+	end
 	
 	BCS.CurrentFestivalCosts = {Goods.G_Gold, _originalCostFactor, _secondGood, _newGoodFactor}
 end
@@ -650,7 +661,7 @@ BCS.CustomBuildWallOrStreetClicked = function(_upgradeCategory, _isTrail)
 	BCS.IsInWallOrPalisadeContinueState = false
     g_LastPlacedParam = _upgradeCategory
 	
-	if _upgradeCategory == nil and _IsTrail ~= nil then
+	if _IsTrail ~= nil then
 		g_LastPlacedParam = _IsTrail
 		GUI.ActivatePlaceRoadState(_IsTrail)
 	else
@@ -670,7 +681,7 @@ BCS.OverwriteBuildClicked = function()
 		if (CostTable ~= nil and CostTable ~= 0) then
 			-- Custom Building
 			GUI.CancelState()
-			BCS.CustomBuildClicked(_upgradeCategory)
+			BCS.CustomBuildClicked(_upgradeCategory, false)
 		else
 			-- Original Building
 			BCS.BuildClicked(_upgradeCategory)
@@ -715,7 +726,7 @@ BCS.OverwriteBuildClicked = function()
 		if (CostTable ~= nil and CostTable ~= 0) then
 			-- Custom WallGate
 			GUI.CancelState()
-			BCS.CustomBuildClicked(_upgradeCategory)
+			BCS.CustomBuildClicked(_upgradeCategory, true)
 		else
 			-- Original WallGate
 			BCS.BuildWallGateClicked(_upgradeCategory)
@@ -736,10 +747,10 @@ BCS.OverwriteBuildClicked = function()
 		
 		if _IsTrail == false and BCS.RoadCosts ~= nil then
 			GUI.CancelState()
-			BCS.CustomBuildWallOrStreetClicked(nil, _IsTrail)
-		elseif BCS.TrailCosts ~= nil then
+			BCS.CustomBuildWallOrStreetClicked(nil, false)
+		elseif _IsTrail == true and BCS.TrailCosts ~= nil then
 			GUI.CancelState()
-			BCS.CustomBuildWallOrStreetClicked(nil, _IsTrail)
+			BCS.CustomBuildWallOrStreetClicked(nil, true)
 		else
 			BCS.BuildStreetClicked(_IsTrail)
 		end
