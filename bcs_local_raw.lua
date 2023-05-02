@@ -38,7 +38,7 @@ BCS = {
 	OverlayIsCurrentlyShown = false,
 	CurrentPlayerID = 1;
 	
-	CurrentBCSVersion = "4.3 - 02.05.2023 00:07",
+	CurrentBCSVersion = "4.3 - 03.05.2023 00:34",
 };
 
 -- Global variables from the original lua game script --
@@ -661,9 +661,9 @@ BCS.CustomBuildWallOrStreetClicked = function(_upgradeCategory, _isTrail)
 	BCS.IsInWallOrPalisadeContinueState = false
     g_LastPlacedParam = _upgradeCategory
 	
-	if _IsTrail ~= nil then
-		g_LastPlacedParam = _IsTrail
-		GUI.ActivatePlaceRoadState(_IsTrail)
+	if _isTrail ~= nil then
+		g_LastPlacedParam = _isTrail
+		GUI.ActivatePlaceRoadState(_isTrail)
 	else
 		GUI.ActivatePlaceWallState(_upgradeCategory)
 	end
