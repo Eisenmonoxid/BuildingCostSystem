@@ -38,7 +38,7 @@ BCS = {
 	OverlayIsCurrentlyShown = false,
 	CurrentPlayerID = 1;
 	
-	CurrentBCSVersion = "4.3 - 03.05.2023 00:34",
+	CurrentBCSVersion = "4.3 - 03.05.2023 03:41",
 };
 
 -- Global variables from the original lua game script --
@@ -982,10 +982,15 @@ BCS.OverwriteTooltipHandling = function()
 				UseBCSCosts = true
 			end
 		else
-			local Entity = Entities[Name]
+			local Entity
+			if Name == "B_WallGate" then
+				Entity = GetEntityTypeForClimatezone("B_WallGate")
+			else
+				Entity = Entities[Name]
+			end
 			if Entity ~= 0 and Entity ~= nil then
 				local CostTable = BCS.GetCostByCostTable(Logic.GetUpgradeCategoryByBuildingType(Entity))
-				if (CostTable ~= nil) then
+				if (CostTable ~= nil and CostTable ~= 0) then
 					UseBCSCosts = true
 				end
 			end
