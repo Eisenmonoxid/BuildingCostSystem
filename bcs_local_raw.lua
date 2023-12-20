@@ -4,7 +4,6 @@
 ----------------------------------------------------------------------------------------------------------------------
 
 BCS = {
-
 	BuildingCosts = {}, -- Contains all new costs
 	BuildingIDTable = {}, -- Contains Building IDs and the corresponding costs
 
@@ -36,9 +35,11 @@ BCS = {
 	CurrentWallTypeForClimate = nil, -- Save climate zone wall type here
 	OverlayWidget = "/EndScreen",
 	OverlayIsCurrentlyShown = false,
-	CurrentPlayerID = 1;
+	CurrentPlayerID = 1,
 	
-	CurrentBCSVersion = "4.3 - 03.05.2023 03:41",
+	TradeDefinitions = {},
+	
+	CurrentBCSVersion = "4.4 - 20.12.2023 19:48",
 };
 
 -- Global variables from the original lua game script --
@@ -189,21 +190,13 @@ end
 -------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 BCS.GetCostByCostTable = function(_upgradeCategory)
-	if _upgradeCategory == nil or _upgradeCategory == 0 then
-		return;
-	end
-	
 	return BCS.BuildingCosts[_upgradeCategory];
 end
 
 BCS.GetCostByBuildingIDTable = function(_entityID)
-	if _entityID == nil or _entityID == 0 then
-		return;
-	end
-	
-	for Type, CurrentCostTable in pairs(BCS.BuildingIDTable) do 
-		if (CurrentCostTable[1] == _entityID) then
-			return CurrentCostTable, Type;
+	for Key, Value in pairs(BCS.BuildingIDTable) do 
+		if (Value[1] == _entityID) then
+			return Value, Key;
 		end
 	end
 	
@@ -1185,7 +1178,7 @@ BCS.InitializeBuildingCostSystem = function()
 	BCS.OverwriteEndScreenCallback()
 	BCS.FestivalCostsHandler()
 	BCS.OverwriteTooltipHandling()
-	BCS.OverwriteOptionalBugfixFunctions() --Not needed, just nice to have
+	BCS.TradePostHandler()
 	
 	BCS.CurrentWallTypeForClimate = GetUpgradeCategoryForClimatezone("WallSegment")
 	
@@ -1237,10 +1230,8 @@ BCS.InitializeBuildingCostSystem = function()
 	end
 		
 	GUI.SendScriptCommand([[
-		if BCS == nil then
-			BCS = {}
-			BCS.AreBuildingCostsAvailable = nil
-		end
+		BCS = BCS or {}
+		BCS.AreBuildingCostsAvailable = nil
 		
 		if BCS.GameCallback_SettlerSpawned == nil then
 			BCS.GameCallback_SettlerSpawned = GameCallback_SettlerSpawned;
@@ -1377,24 +1368,6 @@ BCS.ResetWallTurretPositions = function()
 	EndTurretY = 1
 end
 
-BCS.OverwriteOptionalBugfixFunctions = function()
-	if BCS.BuildingNameUpdate == nil then
-		BCS.BuildingNameUpdate = GUI_BuildingInfo.BuildingNameUpdate;	
-	end
-	GUI_BuildingInfo.BuildingNameUpdate = function()
-		BCS.BuildingNameUpdate()
-		local CurrentWidgetID = XGUIEng.GetCurrentWidgetID()
-		if XGUIEng.GetText(CurrentWidgetID) == "{center}B_Cathedral_Big" then
-			local CurrentLanguage = Network.GetDesiredLanguage()
-			if CurrentLanguage == "de" then
-				XGUIEng.SetText(CurrentWidgetID, "{center}Kathedrale")
-			else
-				XGUIEng.SetText(CurrentWidgetID, "{center}Cathedral")
-			end
-		end
-	end
-end
-
 BCS.FestivalCostsHandler = function()
 
 	if BCS.GetFestivalCost == nil then
@@ -1477,4 +1450,132 @@ BCS.AreFestivalResourcesAvailable = function(_PlayerID, _FestivalIndex)
 		return true
 	end
 end
---#EOF--
+
+BCS.UpdateTradepostDefinitionTable = function(_TradePostID, _ActiveSlot)
+	BCS.TradeDefinitions[_TradePostID] = BCS.TradeDefinitions[_TradePostID] or {}
+	BCS.TradeDefinitions[_TradePostID].TradeIndex = _ActiveSlot
+	
+	if _ActiveSlot == -1 then
+		return;
+	end
+	
+	local Definition = Logic.TradePost_GetTradeDefinition(_TradePostID, _ActiveSlot)
+	BCS.TradeDefinitions[_TradePostID].Trades = BCS.TradeDefinitions[_TradePostID].Trades or {}		
+
+	local GiveGoodCategory = Logic.GetGoodCategoryForGoodType(Definition[1])
+	local RecieveGoodCategory = Logic.GetGoodCategoryForGoodType(Definition[3])
+
+	if GiveGoodCategory ~= GoodCategories.GC_Resource or RecieveGoodCategory ~= GoodCategories.GC_Resource then
+		BCS.TradeDefinitions[_TradePostID].Trades[_ActiveSlot] = Definition
+	else
+		BCS.TradeDefinitions[_TradePostID].Trades[_ActiveSlot] = nil
+	end
+end
+
+BCS.TradePostHandler = function()
+	GUI.SendScriptCommand([[
+		GameCallback_EndOfMonth_Orig = GameCallback_EndOfMonth;
+		function GameCallback_EndOfMonth(_LastMonth, _CurrentMonth)
+			GameCallback_EndOfMonth_Orig(_LastMonth, _CurrentMonth)
+			
+			Logic.ExecuteInLuaLocalState("BCS.TradepostCheckMonthlyTradeDefinitions(_LastMonth, _CurrentMonth)")
+		end
+	]]);
+
+	GUI_Tradepost.TradeClicked = function(_ButtonIndex)
+		local EntityID = GUI.GetSelectedEntity()
+		if g_Tradepost.Trades[_ButtonIndex] == nil then
+			return;
+		end
+	
+		local TradeSlot = g_Tradepost.Trades[_ButtonIndex].TradeSlot
+		local ActiveSlot = Logic.TradePost_GetActiveTradeSlot(EntityID)
+
+		if TradeSlot == ActiveSlot then
+			BCS.UpdateTradepostDefinitionTable(EntityID, -1)
+			GUI.SetActiveTradePostSlot(EntityID, -1)
+		else
+			BCS.UpdateTradepostDefinitionTable(EntityID, TradeSlot)
+			GUI.SetActiveTradePostSlot(EntityID, TradeSlot)
+		end
+	end
+end
+
+BCS.TradepostCheckMonthlyTradeDefinitions = function(_LastMonth, _CurrentMonth)
+	for Key, Value in pairs(BCS.TradeDefinitions) do
+		if Logic.IsEntityAlive(Key) 
+			and Value.TradeIndex ~= -1
+			and Value.Trades[Value.TradeIndex] ~= nil					
+		then
+			local PlayerID = Logic.GetTerritoryPlayerID(GetTerritoryUnderEntity(Key))
+			local TradeDefinition = Value.Trades[Value.TradeIndex]
+			local NeededAmount = TradeDefinition[2]
+			local KnightType = Logic.GetEntityType(Logic.GetKnightID(BCS.CurrentPlayerID))
+			if KnightType == Entities.U_KnightSaraya then
+				NeededAmount = math.ceil(NeededAmount * Logic.Extra1_GetSarayaTradeModifier())
+			end
+
+			BCS.TradepostExecuteTrade(Key, PlayerID, TradeDefinition, NeededAmount)
+		end	
+	end
+end
+
+BCS.TradepostExecuteTrade = function(_TradePostID, _TradePartnerPlayerID, _TradeDefinition, _NeededAmount)
+	local IsReachable = CanEntityReachTarget(_TradePartnerPlayerID, Logic.GetStoreHouse(BCS.CurrentPlayerID), Logic.GetStoreHouse(_TradePartnerPlayerID), nil, PlayerSectorTypes.Civil)
+	
+	if not IsReachable then
+		return;
+	end
+
+	local GoodAmount = 0
+	local CurrentID = BCS.GetEntityIDToAddToOutStock(_TradeDefinition[1])
+	if CurrentID == false then
+		GoodAmount = BCS.GetAmountOfGoodsInSettlement(_TradeDefinition[1], BCS.CurrentPlayerID, false)
+	else
+		GoodAmount = Logic.GetAmountOnOutStockByGoodType(CurrentID, _TradeDefinition[1])
+	end
+
+	if GoodAmount >= _NeededAmount then
+		local GiveGoodCategoryIsResource = (Logic.GetGoodCategoryForGoodType(_TradeDefinition[1]) == GoodCategories.GC_Resource)
+		local RecieveGoodCategoryIsResource = (Logic.GetGoodCategoryForGoodType(_TradeDefinition[3]) == GoodCategories.GC_Resource)
+		
+		if not GiveGoodCategoryIsResource and not Logic.CanFitAnotherMerchantOnMarketplace(Logic.GetMarketplace(_TradePartnerPlayerID)) then
+			return;
+		end
+		if not RecieveGoodCategoryIsResource and not Logic.CanFitAnotherMerchantOnMarketplace(Logic.GetMarketplace(BCS.CurrentPlayerID)) then
+			return;
+		end
+		
+		local EntityTypeGiveGood = (GiveGoodCategoryIsResource and Entities.U_ResourceMerchant) or ((_TradeDefinition[1] == Goods.G_Medicine and Entities.U_Medicus) or Entities.U_Marketer)
+		local EntityTypeRecieveGood = (RecieveGoodCategoryIsResource and Entities.U_ResourceMerchant) or ((_TradeDefinition[3] == Goods.G_Medicine and Entities.U_Medicus) or Entities.U_Marketer)
+
+		if CurrentID == false then
+			BCS.RemoveCostsFromOutStockCityGoods(_TradeDefinition[1], _NeededAmount, BCS.CurrentPlayerID, false)
+		else
+			GUI.RemoveGoodFromStock(CurrentID, _TradeDefinition[1], _NeededAmount)				
+		end
+
+		GUI.SendScriptCommand([[
+			-- Cart from Player to AI
+			local eID = Logic.GetStoreHouse(]]..BCS.CurrentPlayerID..[[)
+			local posX, posY = Logic.GetBuildingApproachPosition(eID)
+			local Orientation = Logic.GetEntityOrientation(eID) - 90
+
+			local CartID = Logic.CreateEntityOnUnblockedLand(]]..EntityTypeGiveGood..[[, posX, posY, Orientation, ]].._TradePartnerPlayerID..[[)
+			Logic.HireMerchant(CartID, ]].._TradePartnerPlayerID..[[, ]].._TradeDefinition[1]..[[, ]].._NeededAmount..[[, ]].._TradePartnerPlayerID..[[)
+		
+			-- Cart from AI to Player
+			eID = Logic.GetStoreHouse(]].._TradePartnerPlayerID..[[)
+			posX, posY = Logic.GetBuildingApproachPosition(eID)
+			Orientation = Logic.GetEntityOrientation(eID) - 90
+
+			CartID = Logic.CreateEntityOnUnblockedLand(]]..EntityTypeRecieveGood..[[, posX, posY, Orientation, ]]..BCS.CurrentPlayerID..[[)
+			Logic.HireMerchant(CartID, ]]..BCS.CurrentPlayerID..[[, ]].._TradeDefinition[3]..[[, ]].._TradeDefinition[4]..[[, ]]..BCS.CurrentPlayerID..[[)
+		]]);
+		
+		GameCallback_Feedback_TradeExecuted(BCS.CurrentPlayerID, _TradePostID)
+	else
+		GameCallback_Feedback_TradeNotExecuted(BCS.CurrentPlayerID, _TradePostID, TradePost.Error_LackingTradeGood, BCS.CurrentPlayerID, _TradeDefinition[1])
+	end
+end
+-- #EOF
