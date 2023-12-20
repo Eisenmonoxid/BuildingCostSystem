@@ -12,6 +12,7 @@ Then you call `SetMyBuildingCosts()`. After that, you can use the exported funct
 - Most buildings in the game can have new costs (see the exact possibilities and limitations in the `bcs_costs.lua` file).
 - Walls, Roads, Trails and Palisades can use the new costs too.
 - Festivals can have own costs.
+- Tradeposts can now use city building goods for trading as well.
 - A few minor bug fixes in the game.
 
 If errors occur, please notify me so i can fix them. ;)
